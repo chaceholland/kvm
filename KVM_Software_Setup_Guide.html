@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KVM Software Setup Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            padding: 10px 20px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .nav-links a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            font-size: 1.5rem;
+            margin: 25px 0 15px 0;
+        }
+
+        .section h4 {
+            color: #333;
+            font-size: 1.2rem;
+            margin: 20px 0 10px 0;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .critical-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .hotkey {
+            display: inline-block;
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin: 30px 0;
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .screenshot {
+            max-width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💻 KVM Software Setup Guide</h1>
+            <p>Configure Better Display, InputLeap, and advanced automation for seamless multi-computer switching</p>
+        </div>
+
+        <div class="nav">
+            <div class="nav-links">
+                <a href="#better-display">🌙 Better Display</a>
+                <a href="#inputleap">⌨️ InputLeap</a>
+                <a href="#stream-deck">🎛️ Stream Deck (2 Devices)</a>
+                <a href="#usb-switch">🔌 USB Switch</a>
+                <a href="#testing">✅ Testing</a>
+                <a href="#troubleshooting">🔧 Troubleshooting</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- OVERVIEW -->
+            <div class="section">
+                <h2>📋 Overview</h2>
+                <p>Now that your hardware is connected, configure the software to enable seamless switching between your three computers (Personal Mac, Work Mac, HP Dock) and two monitors.</p>
+
+                <div class="info-box">
+                    <strong>What You'll Set Up:</strong>
+                    <ul>
+                        <li><strong>Better Display:</strong> DDC/CI control to switch monitor inputs with keyboard shortcuts</li>
+                        <li><strong>InputLeap:</strong> Share one keyboard and mouse across all computers</li>
+                        <li><strong>Stream Deck (2 Devices):</strong> Full-size Stream Deck (15-key) on Personal Mac + Stream Deck Mini (6-key) through USB switch for all computers</li>
+                        <li><strong>eKL USB Switch (Optional):</strong> Automated USB device switching via RS232 serial control</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Important: Input Type Configuration</strong><br>
+                    Each computer uses a different monitor input type:
+                    <ul>
+                        <li>🟢 <strong>Personal Mac:</strong> HDMI (Cmd+1)</li>
+                        <li>🟠 <strong>Work Mac:</strong> DisplayPort (Cmd+2)</li>
+                        <li>🟣 <strong>HP Dock:</strong> USB-C (Cmd+3)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- BETTER DISPLAY -->
+            <div class="section" id="better-display">
+                <h2>🌙 Better Display Setup</h2>
+                <p>Better Display uses DDC/CI (Display Data Channel Command Interface) to control your monitors via software, allowing you to switch inputs with keyboard shortcuts.</p>
+
+                <h3>Step 1: Download and Install</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Download Better Display</strong>
+                    <p>Visit <a href="https://github.com/waydabber/BetterDisplay" target="_blank">https://github.com/waydabber/BetterDisplay</a> and download the latest release.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Install the Application</strong>
+                    <p>Open the downloaded DMG file and drag Better Display to your Applications folder.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Launch Better Display</strong>
+                    <p>Open Better Display from your Applications folder. It will appear in your menu bar.</p>
+                </div>
+
+                <h3>Step 2: Grant Permissions</h3>
+                <div class="critical-box">
+                    <strong>🔐 Required Permissions</strong><br>
+                    Better Display needs specific macOS permissions to control your monitors via DDC/CI.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Accessibility Permission</strong>
+                    <p>When prompted, grant Better Display <strong>Accessibility</strong> access:</p>
+                    <ol>
+                        <li>Open <strong>System Settings</strong> → <strong>Privacy & Security</strong> → <strong>Accessibility</strong></li>
+                        <li>Click the <strong>+</strong> button or toggle Better Display ON</li>
+                        <li>Confirm the change with your password</li>
+                    </ol>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Screen Recording Permission (if prompted)</strong>
+                    <p>Grant <strong>Screen Recording</strong> permission if requested for advanced features.</p>
+                </div>
+
+                <h3>Step 3: Verify Monitor Detection</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Check Menu Bar</strong>
+                    <p>Click the Better Display icon in your menu bar. You should see both Samsung ViewFinity S65UC monitors listed.</p>
+                </div>
+
+                <div class="info-box">
+                    <strong>Expected Display:</strong>
+                    <ul>
+                        <li>Samsung S65UC (LEFT)</li>
+                        <li>Samsung S65UC (RIGHT)</li>
+                    </ul>
+                    If you don't see both monitors, check your connections and restart Better Display.
+                </div>
+
+                <h3>Step 4: Configure Input Source Hotkeys</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Open Better Display Preferences</strong>
+                    <p>Press <span class="hotkey">Cmd+,</span> or click Better Display menu bar icon → <strong>Preferences</strong></p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Navigate to Hotkeys</strong>
+                    <p>In the preferences window, click the <strong>Keyboard</strong> or <strong>Hotkeys</strong> tab.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Configure Input Source Shortcuts</strong>
+                    <p>Find the <strong>"Input Source"</strong> or <strong>"DDC/CI Input"</strong> section and set up these hotkeys:</p>
+
+                    <table>
+                        <tr>
+                            <th>Hotkey</th>
+                            <th>Input Type</th>
+                            <th>Computer</th>
+                        </tr>
+                        <tr>
+                            <td><span class="hotkey">Cmd+1</span></td>
+                            <td>HDMI</td>
+                            <td>🟢 Personal Mac</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hotkey">Cmd+2</span></td>
+                            <td>DisplayPort</td>
+                            <td>🟠 Work Mac</td>
+                        </tr>
+                        <tr>
+                            <td><span class="hotkey">Cmd+3</span></td>
+                            <td>USB-C</td>
+                            <td>🟣 HP Dock</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Apply to All Monitors</strong>
+                    <p>Make sure the hotkeys are configured to switch <strong>ALL displays simultaneously</strong>, not just one monitor.</p>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Important Configuration Notes:</strong>
+                    <ul>
+                        <li>Each hotkey should switch <strong>BOTH monitors</strong> to the same input type</li>
+                        <li>Direct USB-C video connections are required (not through hubs) for DDC/CI to work</li>
+                        <li>The Samsung ViewFinity S65UC supports DDC/CI on all input types</li>
+                    </ul>
+                </div>
+
+                <h3>Step 5: Test Input Switching</h3>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Test Each Hotkey</strong>
+                    <p>With all three computers connected and powered on:</p>
+                    <ul>
+                        <li>Press <span class="hotkey">Cmd+1</span> - Both monitors should switch to HDMI (Personal Mac)</li>
+                        <li>Press <span class="hotkey">Cmd+2</span> - Both monitors should switch to DisplayPort (Work Mac)</li>
+                        <li>Press <span class="hotkey">Cmd+3</span> - Both monitors should switch to USB-C (HP Dock)</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <strong>✅ Success Indicators:</strong>
+                    <ul>
+                        <li>Both monitors switch inputs simultaneously</li>
+                        <li>Switching happens within 1-2 seconds</li>
+                        <li>No flickering or errors</li>
+                        <li>Display appears on the correct computer</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- INPUTLEAP -->
+            <div class="section" id="inputleap">
+                <h2>⌨️ InputLeap Setup</h2>
+                <p>InputLeap allows you to share one keyboard and mouse across all three computers over your local network.</p>
+
+                <h3>Overview</h3>
+                <div class="info-box">
+                    <strong>How InputLeap Works:</strong>
+                    <ul>
+                        <li>One computer acts as the <strong>Server</strong> (hosts the keyboard/mouse)</li>
+                        <li>Other computers are <strong>Clients</strong> (receive input from server)</li>
+                        <li>Move mouse to screen edge to switch between computers</li>
+                        <li>Keyboard automatically follows the mouse</li>
+                    </ul>
+                    <strong>Recommended Configuration:</strong> Personal Mac = Server, Work Mac & HP Laptop = Clients
+                </div>
+
+                <h3>Step 1: Install InputLeap on All Computers</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Download InputLeap</strong>
+                    <p>Visit <a href="https://github.com/input-leap/input-leap" target="_blank">https://github.com/input-leap/input-leap</a> and download the latest release for each operating system:</p>
+                    <ul>
+                        <li><strong>Personal Mac:</strong> macOS version (.dmg)</li>
+                        <li><strong>Work Mac:</strong> macOS version (.dmg)</li>
+                        <li><strong>HP Laptop:</strong> Windows version (.msi or .exe)</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Install on Each Computer</strong>
+                    <p>Run the installer on each computer and follow the installation prompts.</p>
+                </div>
+
+                <h3>Step 2: Configure Network Connections</h3>
+
+                <div class="warning-box">
+                    <strong>⚠️ Network Requirement:</strong> All computers must be on the same local network. Use the UGREEN hubs to connect your MacBooks via Ethernet for best performance.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Connect Ethernet Cables</strong>
+                    <ul>
+                        <li>Plug UGREEN Hub #1 into Personal Mac's USB-C port</li>
+                        <li>Plug UGREEN Hub #2 into Work Mac's USB-C port</li>
+                        <li>Connect Ethernet cables from both hubs to your router/switch</li>
+                        <li>HP Laptop should be on the same network (Ethernet or Wi-Fi)</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Note IP Addresses</strong>
+                    <p>Find each computer's local IP address:</p>
+                    <ul>
+                        <li><strong>macOS:</strong> System Settings → Network → (select connection) → IP address shows as "192.168.x.x"</li>
+                        <li><strong>Windows:</strong> Settings → Network → Properties → IPv4 address</li>
+                    </ul>
+                </div>
+
+                <h3>Step 3: Configure Server (Personal Mac)</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Launch InputLeap</strong>
+                    <p>Open InputLeap on your Personal Mac.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Select Server Mode</strong>
+                    <p>Choose <strong>"Server"</strong> mode in the InputLeap interface.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Configure Screen Layout</strong>
+                    <p>Click <strong>"Configure Server"</strong> and arrange the virtual screens to match your physical setup:</p>
+                    <ul>
+                        <li>Drag and drop screen icons to match your desk layout</li>
+                        <li>Personal Mac (center or left)</li>
+                        <li>Work Mac (adjacent to Personal)</li>
+                        <li>HP Laptop (on the other side)</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Start the Server</strong>
+                    <p>Click <strong>"Start"</strong> to begin hosting keyboard/mouse sharing.</p>
+                </div>
+
+                <h3>Step 4: Configure Clients (Work Mac & HP Laptop)</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Launch InputLeap on Work Mac</strong>
+                    <p>Open InputLeap on Work Mac.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Select Client Mode</strong>
+                    <p>Choose <strong>"Client"</strong> mode.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Enter Server IP Address</strong>
+                    <p>Enter the Personal Mac's IP address (from Step 2) in the <strong>"Server IP"</strong> field.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Start the Client</strong>
+                    <p>Click <strong>"Start"</strong> to connect to the server.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <strong>Repeat for HP Laptop</strong>
+                    <p>Follow the same steps on the HP Laptop to configure it as a client.</p>
+                </div>
+
+                <h3>Step 5: Test Keyboard/Mouse Sharing</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Test Mouse Movement</strong>
+                    <p>Move your mouse to the edge of the Personal Mac screen. The cursor should appear on the adjacent computer's screen.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Test Keyboard</strong>
+                    <p>When the cursor is on a different computer, type something to verify keyboard input works.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Test Copy/Paste</strong>
+                    <p>Copy text on one computer and paste it on another to verify clipboard sharing works.</p>
+                </div>
+
+                <div class="success-box">
+                    <strong>✅ InputLeap Working Correctly:</strong>
+                    <ul>
+                        <li>Mouse moves seamlessly between screens</li>
+                        <li>Keyboard works on whichever computer has the cursor</li>
+                        <li>Clipboard syncs between computers</li>
+                        <li>No lag or connection issues</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- STREAM DECK (2 DEVICES) -->
+            <div class="section" id="stream-deck">
+                <h2>🎛️ Stream Deck Integration (2 Devices)</h2>
+                <p>This setup uses two Elgato Stream Deck devices for seamless multi-computer control, with profiles for macOS and Windows.</p>
+
+                <div class="info-box">
+                    <strong>Device Overview:</strong>
+                    <ul>
+                        <li><strong>Stream Deck (15-key, 3×5):</strong> Connected to Personal Mac over the network — primary control surface with per-computer profiles</li>
+                        <li><strong>Stream Deck Mini (6-key, 2×3):</strong> Connected through the eKL USB switch — follows the active computer as a dedicated KVM switcher</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ Connection Strategy:</strong>
+                    <ul>
+                        <li>The <strong>full-size Stream Deck</strong> stays on the Personal Mac at all times (connected over network/USB). It uses macOS hotkeys and scripts.</li>
+                        <li>The <strong>Stream Deck Mini</strong> moves between computers via the USB switch. When the HP Dock (Windows) is active, the Mini uses Windows scripts and shortcuts.</li>
+                    </ul>
+                </div>
+
+                <h3>Step 1: Install Stream Deck Software</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Install on macOS (Personal Mac)</strong>
+                    <p>Download and install the Stream Deck app from <a href="https://www.elgato.com/stream-deck" target="_blank">Elgato's website</a>. Both devices will be configured here when connected.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Install on Windows (HP Dock)</strong>
+                    <p>Download and install the Stream Deck app on the HP Dock (Windows Work PC) as well. The Mini needs profiles configured on Windows for when the USB switch routes it to the HP Dock.</p>
+                </div>
+
+                <!-- FULL-SIZE STREAM DECK — MAC PROFILES -->
+                <h3>Step 2: Full-Size Stream Deck — macOS Profiles (Personal Mac)</h3>
+                <p>The full-size Stream Deck is always connected to the Personal Mac. Configure three profiles that you can cycle between or auto-switch.</p>
+
+                <h4>Profile 1: Personal Mac (Default)</h4>
+                <div class="info-box">
+                    <strong>15-Key Layout (3 rows × 5 columns):</strong>
+                    <table>
+                        <tr>
+                            <th>Col 1</th><th>Col 2</th><th>Col 3</th><th>Col 4</th><th>Col 5</th>
+                        </tr>
+                        <tr>
+                            <td>🟢 Personal Mac*</td><td>🟠 Work Mac</td><td>🟣 HP Dock</td><td>🔇 Mute/Unmute</td><td>🔒 Lock Screen</td>
+                        </tr>
+                        <tr>
+                            <td>💬 Teams</td><td>🌐 Browser</td><td>📟 Terminal</td><td>📝 VS Code</td><td>📧 Email</td>
+                        </tr>
+                        <tr>
+                            <td>🐭 Jiggler Toggle</td><td>🔊 Vol Up</td><td>🔉 Vol Down</td><td>⏮ Prev Track</td><td>⏭ Next Track</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="step">
+                    <strong>Button Actions (macOS):</strong>
+                    <ul>
+                        <li><strong>KVM Buttons (Row 1, Cols 1-3):</strong> Multi-Action — sends Better Display hotkey (<span class="hotkey">Cmd+1</span>/<span class="hotkey">Cmd+2</span>/<span class="hotkey">Cmd+3</span>) + runs <code>~/switch-usb.sh 1|2|3</code> + switches Stream Deck profile</li>
+                        <li><strong>Mute/Unmute:</strong> Hotkey — <span class="hotkey">Cmd+Shift+M</span> (works in Teams/Zoom)</li>
+                        <li><strong>Lock Screen:</strong> Hotkey — <span class="hotkey">Ctrl+Cmd+Q</span></li>
+                        <li><strong>App Launchers (Row 2):</strong> System: Open — launch Teams, Safari/Chrome, Terminal, VS Code, Mail</li>
+                        <li><strong>Jiggler Toggle:</strong> System: Open — runs <code>~/toggle-jiggler-remote.sh</code> (sends jiggler command to HP Dock over network, see Mouse Jiggler section)</li>
+                        <li><strong>Media Controls (Row 3, Cols 2-5):</strong> Hotkey — standard media keys</li>
+                    </ul>
+                </div>
+
+                <h4>Profile 2: Work Mac</h4>
+                <div class="info-box">
+                    <strong>15-Key Layout:</strong>
+                    <table>
+                        <tr>
+                            <th>Col 1</th><th>Col 2</th><th>Col 3</th><th>Col 4</th><th>Col 5</th>
+                        </tr>
+                        <tr>
+                            <td>🟢 ← Personal</td><td>🟠 Work Mac*</td><td>🟣 ← HP Dock</td><td>🔇 Mute/Unmute</td><td>🔒 Lock Screen</td>
+                        </tr>
+                        <tr>
+                            <td>💬 Teams</td><td>💬 Slack</td><td>🌐 Browser</td><td>📟 Terminal</td><td>📝 VS Code</td>
+                        </tr>
+                        <tr>
+                            <td>🐭 Jiggler Toggle</td><td>🔊 Vol Up</td><td>🔉 Vol Down</td><td>⏮ Prev Track</td><td>⏭ Next Track</td>
+                        </tr>
+                    </table>
+                    <p>Same macOS hotkey actions — the full-size deck is always on the Personal Mac.</p>
+                </div>
+
+                <h4>Profile 3: HP Dock (Windows Work PC)</h4>
+                <div class="info-box">
+                    <strong>15-Key Layout:</strong>
+                    <table>
+                        <tr>
+                            <th>Col 1</th><th>Col 2</th><th>Col 3</th><th>Col 4</th><th>Col 5</th>
+                        </tr>
+                        <tr>
+                            <td>🟢 ← Personal</td><td>🟠 ← Work Mac</td><td>🟣 HP Dock*</td><td>🔇 Mute/Unmute</td><td>🔒 Lock Screen</td>
+                        </tr>
+                        <tr>
+                            <td>💬 Teams</td><td>📧 Outlook</td><td>🌐 Browser</td><td>📁 File Explorer</td><td>🖥 Remote Desktop</td>
+                        </tr>
+                        <tr>
+                            <td>🐭 Jiggler Toggle</td><td>🔊 Vol Up</td><td>🔉 Vol Down</td><td>📋 Task Manager</td><td>⌨️ Cmd Prompt</td>
+                        </tr>
+                    </table>
+                    <p>Same macOS hotkey actions for KVM switching — still runs from Personal Mac. App buttons in Row 2-3 are visual reminders of what's available on the HP Dock.</p>
+                </div>
+
+                <div class="step">
+                    <strong>Auto-Switching Profiles on Full-Size Deck:</strong>
+                    <p>Add a "Switch Profile" action to each KVM button's Multi-Action so the profile changes when you switch computers:</p>
+                    <ol>
+                        <li>Edit the "Personal Mac" KVM button → Multi-Action → add "Switch Profile: Personal Mac"</li>
+                        <li>Edit the "Work Mac" KVM button → Multi-Action → add "Switch Profile: Work Mac"</li>
+                        <li>Edit the "HP Dock" KVM button → Multi-Action → add "Switch Profile: HP Dock"</li>
+                    </ol>
+                </div>
+
+                <!-- STREAM DECK MINI — ALL COMPUTERS -->
+                <h3>Step 3: Stream Deck Mini — Profiles (Follows USB Switch)</h3>
+                <p>The Mini goes through the USB switch, so it connects to whichever computer is active. Each computer needs its own Mini profile configured in that computer's Stream Deck software.</p>
+
+                <h4>Mini Profile — macOS (Personal Mac / Work Mac)</h4>
+                <div class="info-box">
+                    <strong>6-Key Layout (2 rows × 3 columns):</strong>
+                    <table>
+                        <tr>
+                            <th>Col 1</th><th>Col 2</th><th>Col 3</th>
+                        </tr>
+                        <tr>
+                            <td>🟢 Personal Mac</td><td>🟠 Work Mac</td><td>🟣 HP Dock</td>
+                        </tr>
+                        <tr>
+                            <td>🐭 Jiggler Toggle</td><td>🔇 Mute/Unmute</td><td>🔄 Profile Cycle</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="step">
+                    <strong>Mini macOS Button Actions:</strong>
+                    <ul>
+                        <li><strong>KVM Buttons (Row 1):</strong> Multi-Action — Better Display hotkey (<span class="hotkey">Cmd+1</span>/<span class="hotkey">Cmd+2</span>/<span class="hotkey">Cmd+3</span>) + <code>~/switch-usb.sh 1|2|3</code></li>
+                        <li><strong>Jiggler Toggle:</strong> System: Open — <code>~/toggle-jiggler-remote.sh</code></li>
+                        <li><strong>Mute/Unmute:</strong> Hotkey — <span class="hotkey">Cmd+Shift+M</span></li>
+                        <li><strong>Profile Cycle:</strong> "Switch Profile" action to cycle through additional Mini profiles</li>
+                    </ul>
+                </div>
+
+                <h4>Mini Profile — Windows (HP Dock)</h4>
+                <div class="info-box">
+                    <strong>6-Key Layout (2 rows × 3 columns):</strong>
+                    <table>
+                        <tr>
+                            <th>Col 1</th><th>Col 2</th><th>Col 3</th>
+                        </tr>
+                        <tr>
+                            <td>🟢 Personal Mac</td><td>🟠 Work Mac</td><td>🟣 HP Dock*</td>
+                        </tr>
+                        <tr>
+                            <td>🐭 Jiggler Toggle</td><td>🔇 Mute/Unmute</td><td>🔒 Lock (Win+L)</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="step">
+                    <strong>Mini Windows Button Actions:</strong>
+                    <ul>
+                        <li><strong>KVM Buttons (Row 1):</strong> System: Open — runs <code>C:\Scripts\switch-to-personal.bat</code>, <code>switch-to-work.bat</code>, <code>switch-to-hp.bat</code> (see Windows Scripts section below)</li>
+                        <li><strong>Jiggler Toggle:</strong> System: Open — <code>C:\Scripts\toggle-jiggler.bat</code></li>
+                        <li><strong>Mute/Unmute:</strong> Hotkey — <span class="hotkey">Ctrl+Shift+M</span> (Teams for Windows)</li>
+                        <li><strong>Lock:</strong> Hotkey — <span class="hotkey">Win+L</span></li>
+                    </ul>
+                </div>
+
+                <!-- WINDOWS SCRIPTS -->
+                <h3>Step 4: Windows Scripts for HP Dock</h3>
+                <p>These scripts are the Windows equivalents of the macOS Better Display + USB switch scripts. Install them on the HP Dock (Windows Work PC).</p>
+
+                <h4>4A: Install ControlMyMonitor (Windows DDC/CI)</h4>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Download ControlMyMonitor</strong>
+                    <p>Download NirSoft ControlMyMonitor from <a href="https://www.nirsoft.net/utils/control_my_monitor.html" target="_blank">nirsoft.net</a>. Extract to <code>C:\Tools\ControlMyMonitor\</code>.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Find Your Monitor VCP Values</strong>
+                    <p>Open ControlMyMonitor and look for <strong>VCP Code 60 (Input Source)</strong> for each monitor. Note the values for each input type:</p>
+                    <table>
+                        <tr>
+                            <th>Input Type</th><th>Typical VCP 60 Value</th><th>Computer</th>
+                        </tr>
+                        <tr>
+                            <td>HDMI</td><td>17 (0x11)</td><td>🟢 Personal Mac</td>
+                        </tr>
+                        <tr>
+                            <td>DisplayPort</td><td>15 (0x0F)</td><td>🟠 Work Mac</td>
+                        </tr>
+                        <tr>
+                            <td>USB-C</td><td>27 (0x1B)</td><td>🟣 HP Dock</td>
+                        </tr>
+                    </table>
+                    <div class="warning-box">
+                        <strong>⚠️ Important:</strong> VCP values vary by monitor model. Open ControlMyMonitor, find VCP Code 60, and check the current value while each input is active to confirm your Samsung ViewFinity S65UC's actual values.
+                    </div>
+                </div>
+
+                <h4>4B: Create Windows Monitor Switching Scripts</h4>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Create Scripts Directory</strong>
+                    <div class="code-block">mkdir C:\Scripts</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Create Monitor Switch Script</strong>
+                    <p>Save as <code>C:\Scripts\switch-monitors.bat</code>:</p>
+                    <div class="code-block">@echo off
+REM Monitor Input Switch Script for Windows (ControlMyMonitor)
+REM Usage: switch-monitors.bat [1|2|3]
+REM   1 = HDMI (Personal Mac)
+REM   2 = DisplayPort (Work Mac)
+REM   3 = USB-C (HP Dock)
+REM
+REM Update MONITOR1, MONITOR2 with your monitor names from ControlMyMonitor.
+REM Update VCP values if your Samsung ViewFinity S65UC uses different codes.
+
+SET CMM="C:\Tools\ControlMyMonitor\ControlMyMonitor.exe"
+SET MONITOR1=\\.\DISPLAY1
+SET MONITOR2=\\.\DISPLAY2
+
+IF "%1"=="1" (
+    REM Switch both monitors to HDMI (Personal Mac)
+    %CMM% /SetValue "%MONITOR1%" 60 17
+    %CMM% /SetValue "%MONITOR2%" 60 17
+    echo Switched monitors to HDMI - Personal Mac
+) ELSE IF "%1"=="2" (
+    REM Switch both monitors to DisplayPort (Work Mac)
+    %CMM% /SetValue "%MONITOR1%" 60 15
+    %CMM% /SetValue "%MONITOR2%" 60 15
+    echo Switched monitors to DisplayPort - Work Mac
+) ELSE IF "%1"=="3" (
+    REM Switch both monitors to USB-C (HP Dock)
+    %CMM% /SetValue "%MONITOR1%" 60 27
+    %CMM% /SetValue "%MONITOR2%" 60 27
+    echo Switched monitors to USB-C - HP Dock
+) ELSE (
+    echo Usage: switch-monitors.bat [1^|2^|3]
+    echo   1 = HDMI (Personal Mac)
+    echo   2 = DisplayPort (Work Mac)
+    echo   3 = USB-C (HP Dock)
+)</div>
+                </div>
+
+                <h4>4C: Create Windows Combined Switching Scripts</h4>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Create Combined Scripts</strong>
+                    <p>These are the Windows equivalents of the macOS <code>~/switch-to-personal.sh</code> etc.</p>
+
+                    <p>Save as <code>C:\Scripts\switch-to-personal.bat</code>:</p>
+                    <div class="code-block">@echo off
+REM Switch everything to Personal Mac (HDMI)
+call C:\Scripts\switch-monitors.bat 1
+timeout /t 1 /nobreak >nul
+REM USB switch handled by eKL — controlled from Mac side
+echo Switched to Personal Mac</div>
+
+                    <p>Save as <code>C:\Scripts\switch-to-work.bat</code>:</p>
+                    <div class="code-block">@echo off
+REM Switch everything to Work Mac (DisplayPort)
+call C:\Scripts\switch-monitors.bat 2
+timeout /t 1 /nobreak >nul
+echo Switched to Work Mac</div>
+
+                    <p>Save as <code>C:\Scripts\switch-to-hp.bat</code>:</p>
+                    <div class="code-block">@echo off
+REM Switch everything to HP Dock (USB-C)
+call C:\Scripts\switch-monitors.bat 3
+timeout /t 1 /nobreak >nul
+echo Switched to HP Dock</div>
+                </div>
+
+                <div class="info-box">
+                    <strong>Note on USB Switch from Windows:</strong> The eKL USB switch RS232 serial control is connected to the Personal Mac. When switching from the Windows side (HP Dock), the monitor DDC/CI switch happens locally via ControlMyMonitor, but the USB switch is typically controlled from the Mac side. If you also connect a USB-to-RS232 adapter to the HP Dock, you can add serial commands to these scripts using PowerShell:
+                    <div class="code-block">REM Optional: Add USB switch control from Windows
+powershell -Command "[System.IO.Ports.SerialPort]::new('COM3',9600).Open(); $port.Write([byte[]]@(0x01),0,1); $port.Close()"</div>
+                </div>
+
+                <!-- MOUSE JIGGLER -->
+                <h3>Step 5: Mouse Jiggler for Windows (HP Dock)</h3>
+                <p>The mouse jiggler keeps your Teams/Slack status showing as "Available" on the Windows Work PC by moving the mouse 1 pixel every 59 seconds. Toggle it on/off with a single Stream Deck button press.</p>
+
+                <div class="warning-box">
+                    <strong>⚠️ Corporate IT Notice:</strong> Some corporate environments restrict PowerShell script execution. If <code>-ExecutionPolicy Bypass</code> is blocked, check with your IT department or use the VBScript alternative below.
+                </div>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Create the PowerShell Jiggler Script</strong>
+                    <p>Save as <code>C:\Scripts\mouse-jiggler.ps1</code>:</p>
+                    <div class="code-block"># Mouse Jiggler - Toggle Script
+# Moves mouse 1px every 59 seconds to keep Teams/Slack status "Available"
+# Run again to stop (uses lock file for toggle behavior)
+
+$lockFile = "$env:TEMP\mouse-jiggler.lock"
+
+# If already running, stop it by removing the lock file
+if (Test-Path $lockFile) {
+    Remove-Item $lockFile -Force
+    # Show notification that jiggler stopped
+    [System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms') | Out-Null
+    $notify = New-Object System.Windows.Forms.NotifyIcon
+    $notify.Icon = [System.Drawing.SystemIcons]::Information
+    $notify.Visible = $true
+    $notify.ShowBalloonTip(3000, "Mouse Jiggler", "Jiggler STOPPED", [System.Windows.Forms.ToolTipIcon]::Info)
+    Start-Sleep -Seconds 3
+    $notify.Dispose()
+    exit
+}
+
+# Create lock file to signal we're running
+New-Item -Path $lockFile -ItemType File -Force | Out-Null
+
+# Show notification that jiggler started
+Add-Type -AssemblyName System.Windows.Forms
+$notify = New-Object System.Windows.Forms.NotifyIcon
+$notify.Icon = [System.Drawing.SystemIcons]::Information
+$notify.Visible = $true
+$notify.ShowBalloonTip(3000, "Mouse Jiggler", "Jiggler STARTED - Teams/Slack will stay Active", [System.Windows.Forms.ToolTipIcon]::Info)
+Start-Sleep -Seconds 3
+$notify.Dispose()
+
+# Jiggle loop
+Add-Type -AssemblyName System.Windows.Forms
+while (Test-Path $lockFile) {
+    $pos = [System.Windows.Forms.Cursor]::Position
+    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(($pos.X + 1), $pos.Y)
+    Start-Sleep -Milliseconds 100
+    [System.Windows.Forms.Cursor]::Position = New-Object System.Drawing.Point(($pos.X), $pos.Y)
+    Start-Sleep -Seconds 59
+}</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Create the Toggle Batch File</strong>
+                    <p>Save as <code>C:\Scripts\toggle-jiggler.bat</code>:</p>
+                    <div class="code-block">@echo off
+REM Toggle mouse jiggler on/off
+REM Stream Deck "System: Open" action points to this file
+powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Scripts\mouse-jiggler.ps1"</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>VBScript Alternative (if PowerShell is restricted)</strong>
+                    <p>Save as <code>C:\Scripts\mouse-jiggler.vbs</code>:</p>
+                    <div class="code-block">' Mouse Jiggler - VBScript Alternative
+' Run once to start, run again to stop (creates/deletes lock file)
+
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set shell = CreateObject("WScript.Shell")
+lockFile = shell.ExpandEnvironmentStrings("%TEMP%") & "\mouse-jiggler.lock"
+
+If fso.FileExists(lockFile) Then
+    fso.DeleteFile lockFile
+    MsgBox "Mouse Jiggler STOPPED", vbInformation, "Mouse Jiggler"
+    WScript.Quit
+End If
+
+fso.CreateTextFile lockFile, True
+MsgBox "Mouse Jiggler STARTED - Close this to begin", vbInformation, "Mouse Jiggler"
+
+Do While fso.FileExists(lockFile)
+    shell.SendKeys "{SCROLLLOCK}{SCROLLLOCK}"
+    WScript.Sleep 59000
+Loop</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Configure Stream Deck Button</strong>
+                    <p>On both Stream Deck devices:</p>
+                    <ul>
+                        <li><strong>Action Type:</strong> "System: Open"</li>
+                        <li><strong>App/File:</strong> <code>C:\Scripts\toggle-jiggler.bat</code></li>
+                        <li><strong>Title:</strong> "Jiggler" with a mouse icon</li>
+                    </ul>
+                    <p>First press starts the jiggler (notification confirms). Second press stops it.</p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <strong>Optional: Remote Toggle from Mac</strong>
+                    <p>To toggle the jiggler from the Personal Mac's full-size Stream Deck (when you're not on the HP Dock), create <code>~/toggle-jiggler-remote.sh</code> on the Mac:</p>
+                    <div class="code-block">#!/bin/bash
+# Toggle mouse jiggler on HP Dock remotely via SSH
+# Requires SSH access to HP Dock (set up key-based auth)
+HP_DOCK_IP="192.168.x.x"  # Update with HP Dock's IP
+ssh $HP_DOCK_IP "powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\Scripts\mouse-jiggler.ps1"</div>
+                    <div class="code-block">chmod +x ~/toggle-jiggler-remote.sh</div>
+                    <div class="info-box">
+                        <strong>SSH Setup Required:</strong> Enable OpenSSH Server on the HP Dock (Windows Settings → Apps → Optional Features → Add OpenSSH Server). Set up key-based authentication so the script doesn't prompt for a password.
+                    </div>
+                </div>
+
+                <!-- TESTING STREAM DECK -->
+                <h3>Step 6: Test Stream Deck Setup</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Test Full-Size Stream Deck (Personal Mac)</strong>
+                    <ul>
+                        <li>Press each KVM button — verify monitors switch AND profile auto-switches</li>
+                        <li>Press app launcher buttons — verify apps open</li>
+                        <li>Press media buttons — verify volume/playback control</li>
+                        <li>Press Jiggler button — verify notification appears on HP Dock</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Test Mini on macOS (when USB switch → Mac)</strong>
+                    <ul>
+                        <li>Switch USB to Personal Mac — verify Mini appears in Stream Deck app</li>
+                        <li>Press KVM buttons — verify monitor switching works</li>
+                        <li>Press Mute button — verify mute toggles</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Test Mini on Windows (when USB switch → HP Dock)</strong>
+                    <ul>
+                        <li>Switch USB to HP Dock — verify Mini appears in Windows Stream Deck app</li>
+                        <li>Press KVM buttons — verify <code>switch-to-personal.bat</code> etc. run correctly</li>
+                        <li>Press Jiggler button — verify jiggler starts (notification) and stops on second press</li>
+                        <li>Press Lock button — verify <span class="hotkey">Win+L</span> locks the PC</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Test Mouse Jiggler Keeps Status Active</strong>
+                    <ul>
+                        <li>Start the jiggler on the HP Dock</li>
+                        <li>Switch to another computer using KVM</li>
+                        <li>Wait 5+ minutes and check Teams/Slack status on the HP Dock — should still show "Available"</li>
+                        <li>Stop the jiggler when done</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <strong>✅ Stream Deck Setup Complete:</strong>
+                    <ul>
+                        <li>Both Stream Deck devices detected and configured</li>
+                        <li>Full-size: 3 profiles auto-switch with KVM buttons</li>
+                        <li>Mini: Works on both macOS (via USB switch to Mac) and Windows (via USB switch to HP Dock)</li>
+                        <li>Mouse jiggler toggles on/off and keeps Teams/Slack status active</li>
+                        <li>All KVM, app launcher, and utility buttons working</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- USB SWITCH -->
+            <div class="section" id="usb-switch">
+                <h2>🔌 eKL USB Switch Setup (Optional)</h2>
+                <p>The eKL USB Switch allows you to share USB peripherals (webcam, microphone, USB drives, etc.) across all three computers with automated switching via RS232 serial control.</p>
+
+                <div class="info-box">
+                    <strong>What the USB Switch Does:</strong>
+                    <ul>
+                        <li>Share USB devices across all three computers</li>
+                        <li>Switch USB devices automatically when changing monitors</li>
+                        <li>Control via RS232 serial commands</li>
+                        <li>Integrate with Stream Deck for one-button switching</li>
+                    </ul>
+                </div>
+
+                <h3>Overview</h3>
+                <div class="warning-box">
+                    <strong>⚠️ Important:</strong> This setup requires an eKL USB switch with RS232 serial control support. The switch connects to your computer via a USB-to-RS232 adapter.
+                </div>
+
+                <h3>Step 1: Hardware Connection</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Connect the USB Switch</strong>
+                    <ul>
+                        <li>Connect USB peripherals (webcam, mic, etc.) to the eKL USB switch's USB ports</li>
+                        <li>Connect USB output cables from the switch to each computer:
+                            <ul>
+                                <li>Port 1 → Personal Mac</li>
+                                <li>Port 2 → Work Mac</li>
+                                <li>Port 3 → HP Dock</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Connect RS232 Serial Cable</strong>
+                    <ul>
+                        <li>Connect the RS232 cable from the eKL switch to a USB-to-RS232 adapter</li>
+                        <li>Plug the USB-to-RS232 adapter into your Personal Mac (control computer)</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Power On the Switch</strong>
+                    <p>Connect the power adapter to the eKL switch and verify the LED indicators light up.</p>
+                </div>
+
+                <h3>Step 2: Find the Serial Port</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Identify Serial Port Device (macOS)</strong>
+                    <p>Open Terminal and run:</p>
+                    <div class="code-block">ls /dev/tty.*</div>
+                    <p>Look for a device like <code>/dev/tty.usbserial-XXXXXXXX</code> or <code>/dev/tty.SLAB_USBtoUART</code></p>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Note the Device Path</strong>
+                    <p>Save this path - you'll need it for controlling the switch. Example: <code>/dev/tty.usbserial-14210</code></p>
+                </div>
+
+                <h3>Step 3: Manual Control via Terminal</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Test Serial Communication</strong>
+                    <p>Most eKL switches use simple serial commands. The exact format depends on your model, but common formats are:</p>
+                    <div class="code-block"># Switch to Port 1 (Personal Mac)
+echo -e "\x01" > /dev/tty.usbserial-XXXXXXXX
+
+# Switch to Port 2 (Work Mac)
+echo -e "\x02" > /dev/tty.usbserial-XXXXXXXX
+
+# Switch to Port 3 (HP Dock)
+echo -e "\x03" > /dev/tty.usbserial-XXXXXXXX</div>
+                </div>
+
+                <div class="info-box">
+                    <strong>Note:</strong> Serial command format varies by eKL model. Common formats include:
+                    <ul>
+                        <li>Hex bytes: <code>\x01</code>, <code>\x02</code>, <code>\x03</code></li>
+                        <li>Text commands: <code>sw i01</code>, <code>sw i02</code>, <code>sw i03</code></li>
+                        <li>Number commands: <code>1</code>, <code>2</code>, <code>3</code></li>
+                    </ul>
+                    Check your eKL switch manual for the exact command format.
+                </div>
+
+                <h3>Step 4: Create Control Scripts</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Create Helper Script</strong>
+                    <p>Save this as <code>~/switch-usb.sh</code>:</p>
+                    <div class="code-block">#!/bin/bash
+# USB Switch Control Script
+# Usage: ./switch-usb.sh [1|2|3]
+
+PORT=$1
+DEVICE="/dev/tty.usbserial-XXXXXXXX"  # Update with your device path
+
+if [ -z "$PORT" ]; then
+    echo "Usage: $0 [1|2|3]"
+    echo "  1 = Personal Mac"
+    echo "  2 = Work Mac"
+    echo "  3 = HP Dock"
+    exit 1
+fi
+
+case $PORT in
+    1)
+        echo -e "\x01" > $DEVICE
+        echo "Switched USB to Personal Mac"
+        ;;
+    2)
+        echo -e "\x02" > $DEVICE
+        echo "Switched USB to Work Mac"
+        ;;
+    3)
+        echo -e "\x03" > $DEVICE
+        echo "Switched USB to HP Dock"
+        ;;
+    *)
+        echo "Invalid port: $PORT"
+        exit 1
+        ;;
+esac</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Make Script Executable</strong>
+                    <div class="code-block">chmod +x ~/switch-usb.sh</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Test the Script</strong>
+                    <div class="code-block">~/switch-usb.sh 1  # Switch to Personal Mac
+~/switch-usb.sh 2  # Switch to Work Mac
+~/switch-usb.sh 3  # Switch to HP Dock</div>
+                </div>
+
+                <h3>Step 5: Stream Deck Integration</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Add System Command Actions</strong>
+                    <p>In Stream Deck software, enhance your existing computer-switching buttons:</p>
+                    <ul>
+                        <li><strong>Personal Mac button:</strong> Add "System: Open" action with command <code>/Users/yourusername/switch-usb.sh 1</code></li>
+                        <li><strong>Work Mac button:</strong> Add "System: Open" action with command <code>/Users/yourusername/switch-usb.sh 2</code></li>
+                        <li><strong>HP Dock button:</strong> Add "System: Open" action with command <code>/Users/yourusername/switch-usb.sh 3</code></li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Configure Multi-Action</strong>
+                    <p>For each Stream Deck button, create a Multi-Action that:</p>
+                    <ol>
+                        <li>Sends Better Display hotkey (Cmd+1, Cmd+2, or Cmd+3)</li>
+                        <li>Runs the USB switch script (1, 2, or 3)</li>
+                    </ol>
+                    <p>This switches both monitors AND USB devices with one button press!</p>
+                </div>
+
+                <h3>Step 6: Better Display + USB Switching</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Create Combined Switching Scripts</strong>
+                    <p>Save as <code>~/switch-to-personal.sh</code>:</p>
+                    <div class="code-block">#!/bin/bash
+# Switch everything to Personal Mac
+osascript -e 'tell application "System Events" to keystroke "1" using command down'
+sleep 0.5
+~/switch-usb.sh 1</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Create Similar Scripts for Other Computers</strong>
+                    <p><code>~/switch-to-work.sh</code>:</p>
+                    <div class="code-block">#!/bin/bash
+osascript -e 'tell application "System Events" to keystroke "2" using command down'
+sleep 0.5
+~/switch-usb.sh 2</div>
+                    <p><code>~/switch-to-hp.sh</code>:</p>
+                    <div class="code-block">#!/bin/bash
+osascript -e 'tell application "System Events" to keystroke "3" using command down'
+sleep 0.5
+~/switch-usb.sh 3</div>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>Make All Executable</strong>
+                    <div class="code-block">chmod +x ~/switch-to-*.sh</div>
+                </div>
+
+                <h3>Step 7: Test USB Switching</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Test Manual Switching</strong>
+                    <ul>
+                        <li>Run <code>~/switch-usb.sh 1</code> - USB devices should switch to Personal Mac</li>
+                        <li>Verify webcam/mic appear in Personal Mac's system</li>
+                        <li>Test other ports (2, 3) similarly</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Test Combined Switching</strong>
+                    <ul>
+                        <li>Run <code>~/switch-to-personal.sh</code> - Both monitors AND USB devices switch</li>
+                        <li>Verify everything switches together</li>
+                        <li>Test delay (adjust <code>sleep</code> value if needed)</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <strong>✅ USB Switch Working Correctly:</strong>
+                    <ul>
+                        <li>Serial commands successfully switch USB ports</li>
+                        <li>USB devices appear on the correct computer after switching</li>
+                        <li>Combined scripts switch monitors + USB together</li>
+                        <li>Stream Deck buttons (if configured) work correctly</li>
+                    </ul>
+                </div>
+
+                <h3>Advanced: Automatic Switching with Better Display</h3>
+
+                <div class="info-box">
+                    <strong>Pro Tip:</strong> You can configure Better Display to automatically run your USB switch scripts when changing inputs. Check Better Display's scripting/automation settings to run custom commands on input change.
+                </div>
+
+                <h3>Troubleshooting USB Switch</h3>
+
+                <div class="step">
+                    <strong>Problem: Serial Port Not Found</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check USB-to-RS232 adapter is connected</li>
+                        <li>Install driver for USB-to-RS232 adapter if needed (FTDI, Prolific, or Silicon Labs drivers)</li>
+                        <li>Try different USB port</li>
+                        <li>Run <code>ls /dev/tty.*</code> before and after plugging in adapter to identify the device</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Switch Doesn't Respond to Commands</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify command format matches your eKL switch model</li>
+                        <li>Check RS232 cable connections (TX/RX not reversed)</li>
+                        <li>Try different baud rate if your switch requires specific settings</li>
+                        <li>Use <code>screen</code> or <code>minicom</code> to test raw serial communication</li>
+                        <li>Consult your eKL switch manual for exact command protocol</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: USB Devices Don't Appear After Switching</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify eKL switch has power</li>
+                        <li>Check USB cables from switch to computers are connected</li>
+                        <li>Try manually pressing the switch button to verify hardware works</li>
+                        <li>Wait a few seconds for computer to detect USB devices</li>
+                        <li>Some devices may need to be unplugged/replugged once</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TESTING -->
+            <div class="section" id="testing">
+                <h2>✅ Complete System Testing</h2>
+                <p>Verify everything works together seamlessly.</p>
+
+                <h3>Test Checklist</h3>
+
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <strong>Monitor Input Switching</strong>
+                    <ul>
+                        <li>Press <span class="hotkey">Cmd+1</span> - Both monitors show Personal Mac</li>
+                        <li>Press <span class="hotkey">Cmd+2</span> - Both monitors show Work Mac</li>
+                        <li>Press <span class="hotkey">Cmd+3</span> - Both monitors show HP Dock</li>
+                        <li>All switches happen within 1-2 seconds</li>
+                        <li>No errors or black screens</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <strong>Keyboard/Mouse Sharing</strong>
+                    <ul>
+                        <li>Mouse moves between all three computers</li>
+                        <li>Keyboard works on each computer</li>
+                        <li>Copy/paste works across computers</li>
+                        <li>No lag or stuttering</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <strong>EDID Emulator Function</strong>
+                    <ul>
+                        <li>Unplug a display cable - windows stay in place on that computer</li>
+                        <li>Switch monitor inputs - windows don't rearrange</li>
+                        <li>Reboot computer - display layout restores correctly</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <strong>Stream Deck Devices</strong>
+                    <ul>
+                        <li>Full-size Stream Deck shows correct profile for active computer</li>
+                        <li>Mini works on macOS when USB switch routes to Mac</li>
+                        <li>Mini works on Windows when USB switch routes to HP Dock</li>
+                        <li>KVM buttons on both devices switch monitors correctly</li>
+                        <li>Mouse jiggler starts/stops with Stream Deck button</li>
+                        <li>Teams/Slack stays "Available" while jiggler is active</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <span class="step-number">5</span>
+                    <strong>BENFEI USB Power (Work Mac)</strong>
+                    <ul>
+                        <li>Verify USB power cable is connected to BENFEI adapters</li>
+                        <li>Work Mac displays on both monitors via DisplayPort</li>
+                        <li>No flickering or signal loss</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <strong>🎉 System Complete!</strong><br>
+                    If all tests pass, your KVM setup is fully operational. You can now seamlessly work across all three computers with one keyboard, mouse, and monitor setup.
+                </div>
+            </div>
+
+            <!-- TROUBLESHOOTING -->
+            <div class="section" id="troubleshooting">
+                <h2>🔧 Troubleshooting</h2>
+
+                <h3>Better Display Issues</h3>
+
+                <div class="step">
+                    <strong>Problem: Monitors Don't Switch Inputs</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify Accessibility permission is granted in System Settings</li>
+                        <li>Check that you're using direct USB-C video connections (not through hubs)</li>
+                        <li>Restart Better Display from the menu bar</li>
+                        <li>Confirm monitors support DDC/CI (Samsung ViewFinity S65UC does)</li>
+                        <li>Try manually switching inputs using monitor OSD to verify input type names</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Only One Monitor Switches</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check that hotkeys are configured for "All Displays" not just one</li>
+                        <li>Verify both monitors appear in Better Display menu</li>
+                        <li>Check USB-C connections are secure on both monitors</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Hotkeys Don't Work</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check for keyboard shortcut conflicts in System Settings → Keyboard → Shortcuts</li>
+                        <li>Try different hotkey combinations</li>
+                        <li>Restart Better Display</li>
+                    </ul>
+                </div>
+
+                <h3>InputLeap Issues</h3>
+
+                <div class="step">
+                    <strong>Problem: Client Can't Connect to Server</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify all computers are on the same network</li>
+                        <li>Check server IP address is correct</li>
+                        <li>Disable firewall temporarily to test connectivity</li>
+                        <li>Ping server from client to verify network connection</li>
+                        <li>Restart InputLeap on both server and client</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Mouse Lag or Stuttering</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Use Ethernet connections instead of Wi-Fi for MacBooks</li>
+                        <li>Check network congestion</li>
+                        <li>Close bandwidth-heavy applications</li>
+                        <li>Reduce InputLeap quality settings if needed</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Keyboard Doesn't Work on Client</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify InputLeap is running on both server and client</li>
+                        <li>Check Accessibility permissions on both computers</li>
+                        <li>Restart InputLeap services</li>
+                    </ul>
+                </div>
+
+                <h3>Hardware Issues</h3>
+
+                <div class="step">
+                    <strong>Problem: Work Mac DisplayPort Not Working</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check BENFEI USB power cable is connected and powered</li>
+                        <li>Verify coupler connections are secure</li>
+                        <li>Try different DisplayPort cable</li>
+                        <li>Check BENFEI adapter LED (if present) shows power</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: HP Dock USB-C Not Working</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify both adapters (DP→HDMI and HDMI→USB-C) are connected</li>
+                        <li>Check all couplers are seated properly</li>
+                        <li>Confirm HP Dock is outputting DisplayPort signal</li>
+                        <li>Try different HDMI cable between adapters</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Windows Rearrange When Switching</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify EDID emulators are inline in all connections</li>
+                        <li>Check EDID emulator LED (if present) is on</li>
+                        <li>Ensure EDID emulator is 1440p version (matches monitor resolution)</li>
+                    </ul>
+                </div>
+
+                <h3>Stream Deck Issues</h3>
+
+                <div class="step">
+                    <strong>Problem: Stream Deck Mini Not Detected After USB Switch</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Wait 3-5 seconds after USB switch for the device to re-enumerate</li>
+                        <li>Open Stream Deck app — device should appear automatically</li>
+                        <li>Try unplugging/replugging the Mini from the USB switch port</li>
+                        <li>Ensure Stream Deck software is installed on BOTH macOS and Windows</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Mouse Jiggler Not Working on Windows</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Check that <code>C:\Scripts\mouse-jiggler.ps1</code> exists at the correct path</li>
+                        <li>Try running <code>toggle-jiggler.bat</code> manually from Command Prompt to see errors</li>
+                        <li>If PowerShell is restricted, use the VBScript alternative (<code>mouse-jiggler.vbs</code>)</li>
+                        <li>Check <code>%TEMP%\mouse-jiggler.lock</code> — if it exists but jiggler isn't running, delete it manually and retry</li>
+                        <li>Verify Windows Defender / antivirus isn't blocking the script</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: ControlMyMonitor Not Switching Monitors</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Open ControlMyMonitor GUI to verify monitor names (<code>\\.\DISPLAY1</code>, <code>\\.\DISPLAY2</code>)</li>
+                        <li>Check VCP Code 60 values — they vary by monitor model. Switch inputs manually via monitor OSD and note the value ControlMyMonitor shows</li>
+                        <li>Run the batch script from an elevated Command Prompt</li>
+                        <li>Some monitors need DDC/CI enabled in OSD settings (Samsung Menu → System → DDC/CI → On)</li>
+                    </ul>
+                </div>
+
+                <div class="step">
+                    <strong>Problem: Stream Deck Profiles Not Auto-Switching</strong>
+                    <p><strong>Solutions:</strong></p>
+                    <ul>
+                        <li>Verify each KVM button's Multi-Action includes a "Switch Profile" step</li>
+                        <li>Check that profile names match exactly in the Switch Profile action</li>
+                        <li>For the Mini on Windows, profiles are separate from Mac — configure in the Windows Stream Deck app</li>
+                    </ul>
+                </div>
+
+                <h3>Getting Additional Help</h3>
+
+                <div class="info-box">
+                    <strong>Resources:</strong>
+                    <ul>
+                        <li><strong>Better Display:</strong> <a href="https://github.com/waydabber/BetterDisplay/discussions" target="_blank">GitHub Discussions</a></li>
+                        <li><strong>InputLeap:</strong> <a href="https://github.com/input-leap/input-leap/issues" target="_blank">GitHub Issues</a></li>
+                        <li><strong>Monitor Manual:</strong> Samsung ViewFinity S65UC user guide for DDC/CI settings</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- BACK BUTTON -->
+            <div style="text-align: center; margin-top: 50px;">
+                <a href="index.html" class="back-button">← Back to Hardware Guide</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

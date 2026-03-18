@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KVM Setup Guide - Complete with Photos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+        .page { max-width: 1200px; margin: 0 auto; background: white; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 40px; text-align: center; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { color: #aaa; font-size: 1.1rem; }
+
+        /* Tab Navigation */
+        .tab-nav { display: flex; background: #1a1a2e; padding: 0 20px; border-bottom: 3px solid #4fc3f7; position: sticky; top: 0; z-index: 100; }
+        .tab-btn { padding: 15px 30px; font-size: 1rem; font-weight: 600; color: #aaa; background: transparent; border: none; cursor: pointer; position: relative; transition: all 0.3s; }
+        .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .tab-btn.active { color: #4fc3f7; background: rgba(79,195,247,0.1); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -3px; left: 0; right: 0; height: 3px; background: #4fc3f7; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Guide Styles */
+        .toc { background: #e3f2fd; padding: 30px 40px; border-bottom: 3px solid #2196f3; }
+        .toc h2 { color: #1565c0; margin-bottom: 15px; }
+        .toc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .toc-item { background: white; padding: 15px 20px; border-radius: 8px; border-left: 4px solid; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .toc-item.personal { border-left-color: #4caf50; }
+        .toc-item.work { border-left-color: #ff9800; }
+        .toc-item.hp { border-left-color: #9c27b0; }
+        .toc-item.overview { border-left-color: #2196f3; }
+        .section { padding: 40px; border-bottom: 2px solid #eee; }
+        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 3px solid; }
+        .section-header.personal { border-bottom-color: #4caf50; }
+        .section-header.work { border-bottom-color: #ff9800; }
+        .section-header.hp { border-bottom-color: #9c27b0; }
+        .section-number { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; color: white; }
+        .section-number.personal { background: #4caf50; }
+        .section-number.work { background: #ff9800; }
+        .section-number.hp { background: #9c27b0; }
+        .section-title h2 { font-size: 1.8rem; margin-bottom: 5px; }
+        .section-title p { color: #666; }
+        .equipment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-top: 20px; }
+        .equipment-card { background: #fafafa; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .equipment-card .card-header { padding: 15px 20px; color: white; font-weight: bold; font-size: 1.1rem; }
+        .equipment-card .card-body { padding: 20px; }
+        .equipment-card .photo-container { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 2px solid #e0e0e0; text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+        .equipment-card .photo-container img { max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; }
+        .equipment-card .description { font-size: 0.95rem; color: #555; margin-bottom: 10px; }
+        .equipment-card .quantity { font-size: 0.85rem; color: #888; padding: 8px 12px; background: #f0f0f0; border-radius: 20px; display: inline-block; }
+        .equipment-card .product-link { display: inline-block; margin-top: 10px; font-size: 0.85rem; color: #1976d2; text-decoration: none; padding: 8px 15px; background: #e3f2fd; border-radius: 20px; }
+        .port-labels { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+        .port-label { padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 500; }
+        .port-label.hdmi { background: #fff3e0; color: #e65100; border: 1px solid #ff9800; }
+        .port-label.usb { background: #e3f2fd; color: #1565c0; border: 1px solid #2196f3; }
+        .port-label.dp { background: #fce4ec; color: #c2185b; border: 1px solid #e91e63; }
+        .port-label.ethernet { background: #e8f5e9; color: #2e7d32; border: 1px solid #4caf50; }
+        .connection-guide { background: white; border: 2px solid #e0e0e0; border-radius: 12px; margin-bottom: 25px; overflow: hidden; }
+        .connection-header { padding: 20px 25px; display: flex; align-items: center; gap: 15px; }
+        .connection-header.personal { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+        .connection-header.work { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+        .connection-header.hp { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+        .connection-number { width: 45px; height: 45px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .connection-number.personal { color: #4caf50; border: 3px solid #4caf50; }
+        .connection-number.work { color: #ff9800; border: 3px solid #ff9800; }
+        .connection-number.hp { color: #9c27b0; border: 3px solid #9c27b0; }
+        .connection-info h4 { font-size: 1.2rem; margin-bottom: 3px; }
+        .connection-info p { color: #666; font-size: 0.9rem; }
+        .steps-container { padding: 25px; }
+        .signal-chain { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; margin: 15px 0; }
+        .chain-img { width: 45px; height: 45px; object-fit: contain; border-radius: 4px; background: white; padding: 3px; border: 1px solid #ddd; vertical-align: middle; }
+        .chain-item { padding: 10px 15px; border-radius: 8px; font-weight: 500; font-size: 0.9rem; white-space: nowrap; }
+        .chain-arrow { color: #666; font-size: 1.2rem; }
+        .chain-computer { background: #e3f2fd; color: #1565c0; border: 2px solid #1565c0; }
+        .chain-adapter { background: #fff3e0; color: #e65100; border: 2px solid #ff9800; }
+        .chain-edid { background: #fce4ec; color: #c2185b; border: 2px solid #e91e63; }
+        .chain-coupler { background: #f3e5f5; color: #7b1fa2; border: 2px solid #9c27b0; }
+        .chain-cable { background: #e8f5e9; color: #2e7d32; border: 2px solid #4caf50; }
+        .chain-monitor { background: #263238; color: white; border: 2px solid #263238; }
+        .chain-switch { background: #ffeb3b; color: #333; border: 2px solid #f9a825; }
+        .warning-box { background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px 20px; margin: 15px 0; display: flex; align-items: flex-start; gap: 15px; }
+        .warning-box .icon { font-size: 1.5rem; }
+        .warning-box .text { flex: 1; }
+        .warning-box .text strong { color: #e65100; }
+        .critical-box { background: #ffebee; border: 2px solid #f44336; border-radius: 8px; padding: 15px 20px; margin: 15px 0; }
+        .critical-box strong { color: #c62828; }
+        .result-box { background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 15px 20px; margin-top: 20px; display: flex; align-items: center; gap: 15px; }
+        .result-box .icon { font-size: 2rem; }
+        .inline-photos { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; padding: 15px; background: #fafafa; border-radius: 12px; border: 1px solid #e0e0e0; }
+        .inline-photo { text-align: center; }
+        .inline-photo img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: white; padding: 5px; border: 2px solid #e0e0e0; }
+        .inline-photo .label { font-size: 0.75rem; color: #666; margin-top: 5px; }
+
+        /* ==================== ENHANCED WIZARD STYLES ==================== */
+        .wizard-container { min-height: 100vh; background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%); }
+
+        /* Wizard Header */
+        .wizard-top-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px 40px; color: white; }
+        .wizard-top-header h2 { font-size: 2rem; margin-bottom: 5px; }
+        .wizard-top-header p { color: #aaa; }
+
+        /* Progress Section */
+        .wizard-progress-section { background: white; padding: 25px 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 53px; z-index: 99; }
+        .progress-stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .progress-stats .stat { text-align: center; }
+        .progress-stats .stat-number { font-size: 2rem; font-weight: bold; color: #1a1a2e; }
+        .progress-stats .stat-label { font-size: 0.85rem; color: #666; }
+        .progress-bar-container { background: #e0e0e0; border-radius: 25px; height: 30px; overflow: hidden; position: relative; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #4caf50 0%, #8bc34a 50%, #cddc39 100%); border-radius: 25px; transition: width 0.5s ease; position: relative; }
+        .progress-bar-fill::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%); animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; color: #333; text-shadow: 0 0 10px white; }
+        .progress-milestones { display: flex; justify-content: space-between; margin-top: 10px; padding: 0 5px; }
+        .milestone { text-align: center; font-size: 0.75rem; color: #888; }
+        .milestone.completed { color: #4caf50; font-weight: bold; }
+        .milestone.active { color: #1a1a2e; font-weight: bold; }
+
+        /* Computer Selection */
+        .computer-selector { display: flex; gap: 15px; padding: 20px 40px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; }
+        .computer-tab { flex: 1; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.3s; border: 3px solid transparent; text-align: center; position: relative; }
+        .computer-tab.personal { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+        .computer-tab.work { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+        .computer-tab.hp { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+        .computer-tab.active.personal { border-color: #4caf50; box-shadow: 0 4px 15px rgba(76,175,80,0.3); }
+        .computer-tab.active.work { border-color: #ff9800; box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
+        .computer-tab.active.hp { border-color: #9c27b0; box-shadow: 0 4px 15px rgba(156,39,176,0.3); }
+        .computer-tab.active.software { border-color: #673ab7; box-shadow: 0 4px 15px rgba(103,58,183,0.3); }
+        .computer-tab .tab-icon { font-size: 2rem; margin-bottom: 5px; }
+        .computer-tab .tab-title { font-weight: bold; font-size: 1.1rem; }
+        .computer-tab .tab-progress { font-size: 0.85rem; color: #666; margin-top: 5px; }
+        .computer-tab .tab-badge { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: #4caf50; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; }
+        .computer-tab.section-complete .tab-badge { opacity: 1; }
+
+        /* Main Wizard Content */
+        .wizard-main { display: flex; gap: 0; }
+        .wizard-sidebar { width: 280px; background: white; border-right: 1px solid #e0e0e0; min-height: calc(100vh - 300px); }
+        .wizard-content { flex: 1; padding: 30px 40px; }
+
+        /* Sidebar Steps */
+        .sidebar-section { padding: 20px; border-bottom: 1px solid #e0e0e0; }
+        .sidebar-section h4 { font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+        .sidebar-step { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: 10px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
+        .sidebar-step:hover { background: #f5f5f5; }
+        .sidebar-step.active { background: #e3f2fd; }
+        .sidebar-step.completed { opacity: 0.7; }
+        .sidebar-step .step-indicator { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; transition: all 0.3s; }
+        .sidebar-step .step-indicator.pending { background: #e0e0e0; color: #888; }
+        .sidebar-step .step-indicator.active { background: #2196f3; color: white; }
+        .sidebar-step .step-indicator.completed { background: #4caf50; color: white; }
+        .sidebar-step .step-info { flex: 1; }
+        .sidebar-step .step-title { font-weight: 600; font-size: 0.95rem; }
+        .sidebar-step .step-subtitle { font-size: 0.8rem; color: #888; }
+
+        /* Step Content Card */
+        .step-card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .step-card-header { padding: 25px 30px; display: flex; align-items: center; gap: 20px; }
+        .step-card-header.personal { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+        .step-card-header.work { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+        .step-card-header.hp { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+        .step-card-header.software { background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%); }
+        .step-card-number { width: 60px; height: 60px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .step-card-number.personal { color: #4caf50; border: 4px solid #4caf50; }
+        .step-card-number.work { color: #ff9800; border: 4px solid #ff9800; }
+        .step-card-number.hp { color: #9c27b0; border: 4px solid #9c27b0; }
+        .step-card-number.software { color: #673ab7; border: 4px solid #673ab7; }
+        .step-card-title h3 { font-size: 1.5rem; margin-bottom: 5px; }
+        .step-card-title p { color: #666; }
+        .step-card-body { padding: 30px; }
+
+        /* Equipment Needed */
+        .equipment-needed { margin-bottom: 25px; }
+        .equipment-needed h4 { font-size: 1rem; color: #1a1a2e; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .equipment-grid-small { display: flex; flex-wrap: wrap; gap: 15px; }
+        .equipment-item { display: flex; align-items: center; gap: 12px; padding: 12px 15px; background: #fafafa; border-radius: 12px; border: 2px solid #e0e0e0; transition: all 0.3s; }
+        .equipment-item:hover { border-color: #2196f3; background: #f0f7ff; }
+        .equipment-item img { width: 50px; height: 50px; object-fit: contain; border-radius: 8px; background: white; padding: 3px; }
+        .equipment-item .eq-name { font-weight: 600; font-size: 0.9rem; }
+        .equipment-item .eq-note { font-size: 0.75rem; color: #888; }
+
+        /* Detailed Steps */
+        .detailed-steps { margin-bottom: 25px; }
+        .detailed-steps h4 { font-size: 1rem; color: #1a1a2e; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .detail-step { display: flex; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid #2196f3; }
+        .detail-step-number { width: 30px; height: 30px; border-radius: 50%; background: #2196f3; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .detail-step-content { flex: 1; }
+        .detail-step-content strong { display: block; margin-bottom: 3px; }
+        .detail-step-content p { font-size: 0.9rem; color: #666; margin: 0; }
+        .detail-step-content .step-tip { margin-top: 8px; padding: 8px 12px; background: #fff3e0; border-radius: 6px; font-size: 0.85rem; color: #e65100; }
+
+        /* Signal Chain in Wizard */
+        .wizard-signal-chain { margin: 25px 0; }
+        .wizard-signal-chain h4 { font-size: 1rem; color: #1a1a2e; margin-bottom: 15px; }
+        .signal-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 20px; background: linear-gradient(135deg, #f0f4f8 0%, #e4e9ed 100%); border-radius: 12px; }
+        .signal-item { display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 10px; font-weight: 500; transition: all 0.3s; }
+        .signal-item img { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: white; padding: 2px; }
+        .signal-item.highlighted { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .signal-arrow { font-size: 1.5rem; color: #666; }
+
+        /* Warning/Tip Boxes in Wizard */
+        .wizard-warning { display: flex; align-items: flex-start; gap: 15px; padding: 18px 20px; background: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; margin: 20px 0; }
+        .wizard-warning .warn-icon { font-size: 1.8rem; }
+        .wizard-warning .warn-content h5 { color: #e65100; margin-bottom: 5px; }
+        .wizard-warning .warn-content p { font-size: 0.9rem; color: #666; margin: 0; }
+        .wizard-tip { display: flex; align-items: flex-start; gap: 15px; padding: 18px 20px; background: #e8f5e9; border: 2px solid #4caf50; border-radius: 12px; margin: 20px 0; }
+        .wizard-tip .tip-icon { font-size: 1.8rem; }
+        .wizard-tip .tip-content h5 { color: #2e7d32; margin-bottom: 5px; }
+        .wizard-tip .tip-content p { font-size: 0.9rem; color: #666; margin: 0; }
+
+        /* Action Buttons */
+        .step-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 25px; border-top: 1px solid #e0e0e0; margin-top: 25px; }
+        .btn { padding: 14px 28px; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; border: none; display: flex; align-items: center; gap: 8px; }
+        .btn-secondary { background: #f5f5f5; color: #666; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-primary { background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(76,175,80,0.4); }
+        .btn-complete { background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%); color: white; }
+        .btn-complete:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(33,150,243,0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* Completion Celebration */
+        .step-completed-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .step-completed-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+        .completion-modal { background: white; border-radius: 20px; padding: 40px 50px; text-align: center; max-width: 500px; animation: scaleIn 0.3s ease; }
+        .completion-modal .success-icon { font-size: 4rem; margin-bottom: 20px; }
+        .completion-modal h3 { font-size: 1.8rem; margin-bottom: 10px; color: #2e7d32; }
+        .completion-modal p { color: #666; margin-bottom: 25px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Final Celebration */
+        .wizard-complete-screen { display: none; text-align: center; padding: 60px 40px; }
+        .wizard-complete-screen.show { display: block; animation: fadeIn 0.5s ease; }
+        .wizard-complete-screen .trophy { font-size: 5rem; margin-bottom: 20px; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .wizard-complete-screen h2 { font-size: 2.5rem; color: #2e7d32; margin-bottom: 15px; }
+        .wizard-complete-screen p { font-size: 1.2rem; color: #666; max-width: 600px; margin: 0 auto 30px; }
+        .final-summary-card { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; border-radius: 16px; padding: 30px; max-width: 800px; margin: 0 auto 30px; text-align: left; }
+        .final-summary-card h4 { color: #4fc3f7; margin-bottom: 20px; }
+        .summary-table { width: 100%; border-collapse: collapse; }
+        .summary-table th, .summary-table td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .summary-table th { color: #4fc3f7; font-size: 0.9rem; }
+        .summary-table td { font-size: 0.85rem; }
+        .reset-wizard-btn { padding: 15px 40px; background: #f44336; color: white; border: none; border-radius: 30px; font-size: 1.1rem; cursor: pointer; transition: all 0.3s; }
+        .reset-wizard-btn:hover { background: #d32f2f; transform: scale(1.05); }
+
+        /* Confetti Animation */
+        .confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1001; }
+
+        @media print { .page { max-width: 100%; } .section { page-break-inside: avoid; } .tab-nav { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>🖥️ KVM Setup Guide</h1>
+            <p>Step-by-Step Visual Instructions for Connecting 3 Computers to 2 Monitors</p>
+            <p style="margin-top: 10px; color: #4fc3f7;">Created for Chace • January 2026</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('guide')">📖 Full Guide</button>
+            <button class="tab-btn" onclick="switchTab('wizard')">✨ Interactive Setup Wizard</button>
+            <button class="tab-btn" onclick="window.open('KVM_Connection_Diagram.html', '_blank')">🔗 Printable Diagram</button>
+        </div>
+
+        <!-- Tab 1: Full Guide -->
+        <div id="guide-tab" class="tab-content active">
+            <div class="toc">
+                <h2>📋 What's In This Guide</h2>
+                <div class="toc-grid">
+                    <div class="toc-item overview"><strong>Part 0:</strong> Equipment Overview<br><small>Photos and descriptions of each piece</small></div>
+                    <div class="toc-item personal"><strong>Part 1:</strong> Personal MacBook Setup<br><small>2 connections to LEFT and RIGHT monitors</small></div>
+                    <div class="toc-item work"><strong>Part 2:</strong> Work MacBook Setup<br><small>2 connections to LEFT and RIGHT monitors</small></div>
+                    <div class="toc-item hp"><strong>Part 3:</strong> HP Dock Setup<br><small>2 connections to LEFT and RIGHT monitors</small></div>
+                </div>
+            </div>
+
+            <!-- PART 0: Equipment -->
+            <div class="section">
+                <h2 style="font-size: 1.8rem; color: #1565c0; margin-bottom: 25px;">📦 Part 0: Know Your Equipment</h2>
+                <div class="equipment-grid">
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);">🔌 UGREEN Revodok Pro 6-in-1 Hub</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/71J-XDeu4nL._AC_SX679_.jpg" alt="UGREEN Hub"></div>
+                            <div class="port-labels"><span class="port-label usb">USB-C IN</span><span class="port-label hdmi">HDMI OUT</span><span class="port-label ethernet">Ethernet</span><span class="port-label usb">USB-A x2</span></div>
+                            <div class="description"><strong>What it does:</strong> Provides Ethernet and USB ports. <strong>⚠️ For Ethernet only:</strong> Does not pass DDC/CI commands through HDMI, so not used for video connections.</div>
+                            <span class="quantity">You have: 2 of these</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #e91e63 0%, #9c27b0 100%);">📟 EVanlak EDID Emulator</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID Emulator"></div>
+                            <div class="port-labels"><span class="port-label hdmi">HDMI IN (Male)</span><span class="port-label hdmi">HDMI OUT (Male)</span></div>
+                            <div class="critical-box"><strong>⚠️ CRITICAL:</strong> BOTH ends are MALE connectors! You need a coupler.</div>
+                            <div class="description"><strong>What it does:</strong> Tricks Mac into thinking monitor is always connected. Prevents windows from rearranging!</div>
+                            <span class="quantity">Recommended: 6× 1440p (4 for MacBooks + 2 for HP Dock)</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #607d8b 0%, #455a64 100%);">🔗 HDMI Coupler</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" alt="HDMI Coupler"></div>
+                            <div class="port-labels"><span class="port-label hdmi">HDMI Female</span><span class="port-label hdmi">HDMI Female</span></div>
+                            <div class="description"><strong>What it does:</strong> Connects two male HDMI plugs together. Needed because EDID output and BENFEI input are both male!</div>
+                            <span class="quantity">You have: 4 couplers (need 2 more for HP Dock)</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">🔄 BENFEI HDMI→DP Adapter</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg" alt="BENFEI Adapter"></div>
+                            <div class="port-labels"><span class="port-label hdmi">HDMI IN</span><span class="port-label dp">DP OUT</span><span class="port-label usb">USB Power</span></div>
+                            <div class="critical-box"><strong>⚡ CRITICAL:</strong> Must plug in USB power or it won't work!</div>
+                            <div class="description"><strong>What it does:</strong> Converts HDMI to DisplayPort for Samsung ViewFinity monitors.</div>
+                            <span class="quantity">Need: 4 total (2 per MacBook, not used for HP Dock)</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);">📺 USB-C to HDMI Cable</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" alt="USB-C to HDMI Cable"></div>
+                            <div class="port-labels"><span class="port-label usb">USB-C</span><span class="port-label hdmi">HDMI</span></div>
+                            <div class="description"><strong>What it does:</strong> Direct cable from MacBook USB-C to HDMI. No adapter needed!</div>
+                            <span class="quantity">Need: 4 total (2 per MacBook)</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);">🔌 DisplayPort to HDMI Adapter</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg" alt="DP to HDMI Adapter"></div>
+                            <div class="port-labels"><span class="port-label dp">DP IN (Male)</span><span class="port-label hdmi">HDMI OUT (Female)</span></div>
+                            <div class="description"><strong>What it does:</strong> Converts HP Dock's DisplayPort output to HDMI for consistent equipment chain.</div>
+                            <span class="quantity">Need: 2 (one per HP Dock monitor)</span>
+                        </div>
+                    </div>
+                    <div class="equipment-card">
+                        <div class="card-header" style="background: linear-gradient(135deg, #673ab7 0%, #512da8 100%);">🔌 HDMI to USB-C Adapter</div>
+                        <div class="card-body">
+                            <div class="photo-container"><img src="https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg" alt="HDMI to USB-C Adapter"></div>
+                            <div class="port-labels"><span class="port-label hdmi">HDMI IN (Male)</span><span class="port-label usb">USB-C OUT</span></div>
+                            <div class="description"><strong>What it does:</strong> Converts HDMI signal from EDID output to USB-C for monitor USB-C input (HP Dock).</div>
+                            <span class="quantity">Need: 2 (one per HP Dock monitor)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHOPPING LIST -->
+            <div class="section" style="background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+                <h2 style="font-size: 1.8rem; color: #1565c0; margin-bottom: 25px;">🛒 Complete Shopping List</h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 25px;">
+                    <!-- Have Section -->
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 5px solid #4caf50;">
+                        <h3 style="color: #2e7d32; margin-bottom: 15px;">✅ Equipment You Have</h3>
+                        <table style="width: 100%; font-size: 0.9rem;">
+                            <tr><td>Samsung ViewFinity S65UC 34" monitors</td><td style="text-align: right; font-weight: bold;">2</td></tr>
+                            <tr><td>UGREEN Revodok Pro 6-in-1 Hub</td><td style="text-align: right; font-weight: bold;">2</td></tr>
+                            <tr><td>EDID 1440p emulators</td><td style="text-align: right; font-weight: bold;">6</td></tr>
+                            <tr><td>HDMI couplers (female-female)</td><td style="text-align: right; font-weight: bold;">6</td></tr>
+                            <tr><td>USB-C to HDMI cables</td><td style="text-align: right; font-weight: bold;">4</td></tr>
+                            <tr><td>DisplayPort cables</td><td style="text-align: right; font-weight: bold;">2+</td></tr>
+                        </table>
+                    </div>
+
+                    <!-- Need to Buy Section -->
+                    <div style="background: white; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800;">
+                        <h3 style="color: #c62828; margin-bottom: 15px;">🛒 Need to Buy</h3>
+                        <table style="width: 100%; font-size: 0.9rem;">
+                            <tr><td>BENFEI HDMI→DP adapters (with USB power)</td><td style="text-align: right; font-weight: bold;">4</td></tr>
+                            <tr><td>DP to HDMI adapters</td><td style="text-align: right; font-weight: bold;">2</td></tr>
+                            <tr><td>HDMI to USB-C adapters</td><td style="text-align: right; font-weight: bold;">2</td></tr>
+                            <tr style="border-top: 2px solid #ddd;"><td colspan="2" style="padding-top: 10px; font-style: italic; color: #666;">Total new items needed: 8 adapters</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Total Inventory After Purchase -->
+                <div style="background: white; padding: 20px; border-radius: 10px; border-left: 5px solid #2196f3;">
+                    <h3 style="color: #1565c0; margin-bottom: 15px;">📦 Total Inventory After Purchase</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 0.9rem;">
+                        <div><strong>USB-C to HDMI cables:</strong> 4</div>
+                        <div><strong>EDID 1440p emulators:</strong> 6</div>
+                        <div><strong>BENFEI HDMI→DP adapters:</strong> 4</div>
+                        <div><strong>HDMI couplers:</strong> 6</div>
+                        <div><strong>DP to HDMI adapters:</strong> 2</div>
+                        <div><strong>HDMI to USB-C adapters:</strong> 2</div>
+                        <div><strong>DisplayPort cables:</strong> 2+</div>
+                    </div>
+                </div>
+
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; margin-top: 20px;">
+                    <strong style="color: #e65100;">💡 Why These Changes?</strong><br>
+                    <span style="color: #555;">The UGREEN hubs don't pass DDC/CI commands needed for Better Display to switch monitor inputs. Direct USB-C connections fix this while keeping Ethernet functionality.</span>
+                </div>
+            </div>
+
+            <!-- PART 1: Personal Mac -->
+            <div class="section">
+                <div class="section-header personal"><div class="section-number personal">1</div><div class="section-title"><h2>Personal MacBook Setup</h2><p>Connect to LEFT and RIGHT monitors</p></div></div>
+                <div class="connection-guide">
+                    <div class="connection-header personal"><div class="connection-number personal">1A</div><div class="connection-info"><h4>Personal Mac → LEFT Monitor</h4><p>Direct HDMI via USB-C cable</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" alt="USB-C to HDMI"><div class="label">USB-C→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">MacBook USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" class="chain-img" alt="Cable"> USB-C to HDMI cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">LEFT Monitor HDMI</span>
+                        </div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 1A Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div class="connection-guide">
+                    <div class="connection-header personal"><div class="connection-number personal">1B</div><div class="connection-info"><h4>Personal Mac → RIGHT Monitor</h4><p>Direct HDMI via USB-C cable</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" alt="USB-C to HDMI"><div class="label">USB-C→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">MacBook USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" class="chain-img" alt="Cable"> USB-C to HDMI cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">RIGHT Monitor HDMI</span>
+                        </div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 1B Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div style="background: #e8f5e9; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; margin: 15px 0;"><strong style="color: #2e7d32;">✨ Simplest Setup!</strong> Personal Mac has the cleanest connection: USB-C cable → EDID → Monitor HDMI. No extra adapters!</div>
+            </div>
+
+            <!-- PART 2: Work Mac -->
+            <div class="section">
+                <div class="section-header work"><div class="section-number work">2</div><div class="section-title"><h2>Work MacBook Setup</h2><p>Connect to LEFT and RIGHT monitors</p></div></div>
+                <div class="connection-guide">
+                    <div class="connection-header work"><div class="connection-number work">2A</div><div class="connection-info"><h4>Work Mac → LEFT Monitor</h4><p>DisplayPort via BENFEI adapter</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" alt="USB-C to HDMI"><div class="label">USB-C→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" alt="Coupler"><div class="label">Coupler</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg" alt="BENFEI"><div class="label">BENFEI</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">Work Mac USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" class="chain-img" alt="Cable"> USB-C to HDMI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-coupler"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" class="chain-img" alt="Coupler"> Coupler</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg" class="chain-img" alt="BENFEI"> BENFEI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable">DP Cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">LEFT Monitor DisplayPort</span>
+                        </div>
+                        <div class="warning-box"><div class="icon">⚡</div><div class="text"><strong>USB Power Required!</strong> Connect BENFEI USB power cable to wall adapter or USB port.</div></div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 2A Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div class="connection-guide">
+                    <div class="connection-header work"><div class="connection-number work">2B</div><div class="connection-info"><h4>Work Mac → RIGHT Monitor</h4><p>DisplayPort via BENFEI adapter</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" alt="USB-C to HDMI"><div class="label">USB-C→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" alt="Coupler"><div class="label">Coupler</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg" alt="BENFEI"><div class="label">BENFEI</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">Work Mac USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable"><img src="https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg" class="chain-img" alt="Cable"> USB-C to HDMI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-coupler"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" class="chain-img" alt="Coupler"> Coupler</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg" class="chain-img" alt="BENFEI"> BENFEI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable">DP Cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">RIGHT Monitor DisplayPort</span>
+                        </div>
+                        <div class="warning-box"><div class="icon">⚡</div><div class="text"><strong>USB Power Required!</strong> Connect BENFEI USB power cable to wall adapter or USB port.</div></div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 2B Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div style="background: #e3f2fd; border: 2px solid #2196f3; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                    <strong style="color: #1565c0;">🌐 Ethernet Connection:</strong><br>
+                    <span style="color: #555;">Plug UGREEN Hub #2 into USB-C port 3 for Ethernet. Hub is NOT used for video (DDC/CI limitation).</span>
+                </div>
+                <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 12px; padding: 25px; margin-top: 20px; border: 3px solid #ff9800;">
+                    <h3 style="color: #e65100; margin-bottom: 15px;">🎉 PART 2 COMPLETE: Work MacBook Connected!</h3>
+                </div>
+            </div>
+
+            <!-- PART 3: HP Dock -->
+            <div class="section">
+                <div class="section-header hp"><div class="section-number hp">3</div><div class="section-title"><h2>HP Dock Setup</h2><p>Connect to LEFT and RIGHT monitors</p></div></div>
+                <div class="connection-guide">
+                    <div class="connection-header hp"><div class="connection-number hp">3A</div><div class="connection-info"><h4>HP Dock → LEFT Monitor</h4><p>USB-C via DP→HDMI→USB-C conversion</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg" alt="DP to HDMI"><div class="label">DP→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" alt="Coupler"><div class="label">Coupler</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg" alt="HDMI to USB-C"><div class="label">HDMI→USB-C</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">HP Dock DP</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg" class="chain-img" alt="Adapter"> DP to HDMI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable">HDMI Cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-coupler"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" class="chain-img" alt="Coupler"> Coupler</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg" class="chain-img" alt="HDMI to USB-C"> HDMI to USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">LEFT Monitor USB-C</span>
+                        </div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 3A Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div class="connection-guide">
+                    <div class="connection-header hp"><div class="connection-number hp">3B</div><div class="connection-info"><h4>HP Dock → RIGHT Monitor</h4><p>USB-C via DP→HDMI→USB-C conversion</p></div></div>
+                    <div class="steps-container">
+                        <div class="inline-photos">
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg" alt="DP to HDMI"><div class="label">DP→HDMI</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" alt="EDID"><div class="label">EDID 1440p</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" alt="Coupler"><div class="label">Coupler</div></div>
+                            <div class="inline-photo"><img src="https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg" alt="HDMI to USB-C"><div class="label">HDMI→USB-C</div></div>
+                        </div>
+                        <div class="signal-chain">
+                            <span class="chain-item chain-computer">HP Dock DP #2</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg" class="chain-img" alt="Adapter"> DP to HDMI</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-cable">HDMI Cable</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-edid"><img src="https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg" class="chain-img" alt="EDID"> EDID 1440p</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-coupler"><img src="https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg" class="chain-img" alt="Coupler"> Coupler</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-adapter"><img src="https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg" class="chain-img" alt="HDMI to USB-C"> HDMI to USB-C</span><span class="chain-arrow">→</span>
+                            <span class="chain-item chain-monitor">RIGHT Monitor USB-C</span>
+                        </div>
+                        <div class="result-box"><div class="icon">✅</div><div><strong>Connection 3B Complete!</strong></div></div>
+                    </div>
+                </div>
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <strong style="color: #e65100;">ℹ️ Two-Stage Conversion</strong><br>
+                    <span style="color: #555;">HP Dock uses two adapters per monitor (DP→HDMI then HDMI→USB-C) to reach the USB-C input while maintaining EDID in the chain.</span>
+                </div>
+                <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-radius: 12px; padding: 25px; margin-top: 20px; border: 3px solid #9c27b0;">
+                    <h3 style="color: #7b1fa2; margin-bottom: 15px;">🎉 PART 3 COMPLETE: HP Dock Connected!</h3>
+                </div>
+            </div>
+
+            <!-- PART 4: SOFTWARE SETUP -->
+            <div class="section">
+                <div class="section-header" style="border-bottom-color: #673ab7;">
+                    <div class="section-number" style="background: linear-gradient(135deg, #673ab7 0%, #512da8 100%);">4</div>
+                    <div class="section-title">
+                        <h2>Software Setup</h2>
+                        <p>Configure Better Display, InputLeap, Stream Deck, and USB switch for seamless switching</p>
+                    </div>
+                </div>
+
+                <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                    <h3 style="color: #e65100; margin-bottom: 15px;">⚠️ Important: Input Type Assignment</h3>
+                    <p style="color: #555; line-height: 1.6;">
+                        <strong>Each computer uses a different input type:</strong><br>
+                        • Personal Mac → HDMI (simplest, no extra adapters)<br>
+                        • Work Mac → DisplayPort (via BENFEI HDMI→DP adapter)<br>
+                        • HP Dock → USB-C (via DP→HDMI→USB-C conversion)
+                    </p>
+                    <p style="color: #555; line-height: 1.6; margin-top: 10px;">
+                        Better Display uses DDC/CI to switch both monitors to the same input type simultaneously with one hotkey press.
+                    </p>
+                </div>
+
+                <!-- Software Overview with Link -->
+                <div style="background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%); border-radius: 12px; padding: 25px; margin-bottom: 25px; border: 2px solid #673ab7;">
+                    <h3 style="color: #512da8; margin-bottom: 15px;">💻 Software Setup Guide Available</h3>
+                    <p style="color: #555; margin-bottom: 20px;">We've created a comprehensive software setup guide with Stream Deck integration, DDC/CI control, and USB switch automation.</p>
+
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <a href="KVM_Software_Setup_Guide.html" style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #673ab7 0%, #512da8 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(103,58,183,0.3);">
+                            📖 Open Software Setup Guide →
+                        </a>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                        <div style="background: white; padding: 15px; border-radius: 10px; border-left: 4px solid #4caf50; text-align: center;">
+                            <strong style="color: #2e7d32;">🌙 Better Display</strong><br>
+                            <span style="font-size: 0.85rem; color: #666;">DDC/CI monitor control</span>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 10px; border-left: 4px solid #2196f3; text-align: center;">
+                            <strong style="color: #1565c0;">⌨️ InputLeap</strong><br>
+                            <span style="font-size: 0.85rem; color: #666;">Keyboard & mouse sharing</span>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 10px; border-left: 4px solid #ff9800; text-align: center;">
+                            <strong style="color: #e65100;">🎛️ Stream Deck</strong><br>
+                            <span style="font-size: 0.85rem; color: #666;">One-button switching</span>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 10px; border-left: 4px solid #9c27b0; text-align: center;">
+                            <strong style="color: #7b1fa2;">🔌 USB Switch</strong><br>
+                            <span style="font-size: 0.85rem; color: #666;">RS232 automation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Reference -->
+                <div style="background: #f5f5f5; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+                    <h4 style="color: #512da8; margin-bottom: 15px;">🚀 Quick Software Summary</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                        <tr style="border-bottom: 1px solid #e0e0e0;">
+                            <td style="padding: 10px;"><strong>Better Display (DDC/CI)</strong></td>
+                            <td style="padding: 10px;">
+                                Cmd+1: Switch both monitors to HDMI (Personal Mac)<br>
+                                Cmd+2: Switch both monitors to DisplayPort (Work Mac)<br>
+                                Cmd+3: Switch both monitors to USB-C (HP Dock)
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e0e0e0;">
+                            <td style="padding: 10px;"><strong>InputLeap</strong></td>
+                            <td style="padding: 10px;">Share keyboard/mouse across computers via network</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e0e0e0;">
+                            <td style="padding: 10px;"><strong>Stream Deck</strong></td>
+                            <td style="padding: 10px;">One-button press switches ALL monitors + USB devices</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;"><strong>eKL USB Switch</strong></td>
+                            <td style="padding: 10px;">RS232 serial control for automated USB switching</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Link to Full Software Guide -->
+                <div style="background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%); border-radius: 12px; padding: 25px; margin-top: 20px; border: 3px solid #673ab7;">
+                    <h3 style="color: #512da8; margin-bottom: 15px;">🎉 Hardware Setup Complete!</h3>
+                    <p style="color: #555; margin-bottom: 15px;">Your hardware is connected. Now configure the software for automated switching.</p>
+                    <div style="text-align: center;">
+                        <a href="KVM_Software_Setup_Guide.html" style="display: inline-block; padding: 12px 30px; background: #673ab7; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                            Continue to Software Setup Guide →
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FINAL SUMMARY -->
+            <div class="section" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
+                <h2 style="font-size: 2rem; text-align: center; margin-bottom: 30px;">🏆 Setup Complete!</h2>
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <h3 style="color: #4fc3f7; margin-bottom: 20px;">Quick Reference: All 6 Connections</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.1);">
+                                <th style="padding: 15px; text-align: left; border-bottom: 2px solid #4fc3f7;">Computer</th>
+                                <th style="padding: 15px; text-align: center; border-bottom: 2px solid #4fc3f7;">→ LEFT</th>
+                                <th style="padding: 15px; text-align: center; border-bottom: 2px solid #4fc3f7;">→ RIGHT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: rgba(76,175,80,0.2);">
+                                <td style="padding: 12px; font-weight: bold;">🟢 Personal Mac</td>
+                                <td style="padding: 12px; text-align: center;">USB-C→HDMI input</td>
+                                <td style="padding: 12px; text-align: center;">USB-C→HDMI input</td>
+                            </tr>
+                            <tr style="background: rgba(255,152,0,0.2);">
+                                <td style="padding: 12px; font-weight: bold;">🟠 Work Mac</td>
+                                <td style="padding: 12px; text-align: center;">USB-C→BENFEI→DP input</td>
+                                <td style="padding: 12px; text-align: center;">USB-C→BENFEI→DP input</td>
+                            </tr>
+                            <tr style="background: rgba(156,39,176,0.2);">
+                                <td style="padding: 12px; font-weight: bold;">🟣 HP Dock</td>
+                                <td style="padding: 12px; text-align: center;">DP→HDMI→USB-C input</td>
+                                <td style="padding: 12px; text-align: center;">DP→HDMI→USB-C input</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 25px;">
+                        <h3 style="color: #ff9800; margin-bottom: 15px;">⚠️ Critical Reminders</h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <div style="background: rgba(244,67,54,0.2); padding: 15px; border-radius: 8px; border-left: 4px solid #f44336;"><strong style="color: #ef5350;">⚡ BENFEI USB Power</strong><br><span style="color: #ddd; font-size: 0.9rem;">Always plug in USB power or adapter won't work!</span></div>
+                            <div style="background: rgba(76,175,80,0.2); padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;"><strong style="color: #81c784;">🌐 Ethernet</strong><br><span style="color: #ddd; font-size: 0.9rem;">Both UGREEN Hubs have Ethernet - plug in network cables!</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Guide Tab -->
+
+        <!-- Tab 2: Enhanced Interactive Setup Wizard -->
+        <div id="wizard-tab" class="tab-content">
+            <div class="wizard-container">
+                <!-- Wizard Header -->
+                <div class="wizard-top-header">
+                    <h2>✨ Interactive Setup Wizard</h2>
+                    <p>Follow along step-by-step to connect all your devices</p>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="wizard-progress-section">
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <div class="stat-number" id="completedCount">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="remainingCount">13</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number" id="percentComplete">0%</div>
+                            <div class="stat-label">Progress</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="progressBar" style="width: 0%;"></div>
+                        <span class="progress-text" id="progressText">0 of 13 steps</span>
+                    </div>
+                    <div class="progress-milestones">
+                        <div class="milestone" data-milestone="personal">Personal Mac</div>
+                        <div class="milestone" data-milestone="work">Work Mac</div>
+                        <div class="milestone" data-milestone="hp">HP Dock</div>
+                        <div class="milestone" data-milestone="software">Software</div>
+                        <div class="milestone" data-milestone="complete">🏆 Complete!</div>
+                    </div>
+                </div>
+
+                <!-- Computer Selection Tabs -->
+                <div class="computer-selector">
+                    <div class="computer-tab personal active" onclick="selectComputer('personal')" data-computer="personal">
+                        <div class="tab-badge">✓</div>
+                        <div class="tab-icon">💻</div>
+                        <div class="tab-title">Personal MacBook</div>
+                        <div class="tab-progress"><span class="done-count">0</span>/2 connections</div>
+                    </div>
+                    <div class="computer-tab work" onclick="selectComputer('work')" data-computer="work">
+                        <div class="tab-badge">✓</div>
+                        <div class="tab-icon">🖥️</div>
+                        <div class="tab-title">Work MacBook</div>
+                        <div class="tab-progress"><span class="done-count">0</span>/2 connections</div>
+                    </div>
+                    <div class="computer-tab hp" onclick="selectComputer('hp')" data-computer="hp">
+                        <div class="tab-badge">✓</div>
+                        <div class="tab-icon">🏢</div>
+                        <div class="tab-title">HP Dock</div>
+                        <div class="tab-progress"><span class="done-count">0</span>/2 connections</div>
+                    </div>
+                    <div class="computer-tab software" onclick="selectComputer('software')" data-computer="software" style="background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%);">
+                        <div class="tab-badge">✓</div>
+                        <div class="tab-icon">💻</div>
+                        <div class="tab-title">Software Setup</div>
+                        <div class="tab-progress"><span class="done-count">0</span>/4 steps</div>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="wizard-main" id="wizardMain">
+                    <!-- Sidebar with steps -->
+                    <div class="wizard-sidebar">
+                        <div class="sidebar-section" id="sidebarSteps">
+                            <h4>Connections</h4>
+                            <!-- Steps will be populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Step Content -->
+                    <div class="wizard-content" id="stepContent">
+                        <!-- Content will be populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Completion Screen -->
+                <div class="wizard-complete-screen" id="wizardComplete">
+                    <div class="trophy">🏆</div>
+                    <h2>All 9 Steps Complete!</h2>
+                    <p>Congratulations! You've successfully connected all 3 computers to both monitors AND configured the software. Your KVM setup is now ready to use!</p>
+                    <div class="final-summary-card">
+                        <h4>📋 Quick Reference - Hardware</h4>
+                        <table class="summary-table">
+                            <thead><tr><th>Computer</th><th>LEFT</th><th>RIGHT</th></tr></thead>
+                            <tbody>
+                                <tr><td>🟢 Personal</td><td>USB-C→HDMI input</td><td>USB-C→HDMI input</td></tr>
+                                <tr><td>🟠 Work</td><td>USB-C→BENFEI→DP input</td><td>USB-C→BENFEI→DP input</td></tr>
+                                <tr><td>🟣 HP Dock</td><td>DP→HDMI→USB-C input</td><td>DP→HDMI→USB-C input</td></tr>
+                            </tbody>
+                        </table>
+                        <h4 style="margin-top: 20px;">💻 Quick Reference - Software</h4>
+                        <table class="summary-table">
+                            <thead><tr><th>Hotkey</th><th>Action</th><th>Notes</th></tr></thead>
+                            <tbody>
+                                <tr><td>Cmd+1</td><td>Switch to Personal Mac</td><td>Both monitors</td></tr>
+                                <tr><td>Cmd+2</td><td>Switch to Work Mac</td><td>Both monitors</td></tr>
+                                <tr><td>Cmd+3</td><td>Switch to HP Dock</td><td>Both monitors</td></tr>
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #aaa;">InputLeap: Move mouse to edge to switch computers | Better Display: Cmd+1=HDMI, Cmd+2=DP, Cmd+3=USB-C</p>
+                    </div>
+
+                    <button class="reset-wizard-btn" onclick="resetWizard()">🔄 Start Over</button>
+                </div>
+            </div>
+        </div><!-- End Wizard Tab -->
+
+        <!-- Step Completion Modal -->
+        <div class="step-completed-overlay" id="completionModal">
+            <div class="completion-modal">
+                <div class="success-icon">✅</div>
+                <h3 id="modalTitle">Connection Complete!</h3>
+                <p id="modalMessage">Great job! Moving to the next connection...</p>
+                <button class="btn btn-primary" onclick="closeModal()">Continue →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== WIZARD DATA ====================
+        const wizardData = {
+            personal: {
+                name: 'Personal MacBook',
+                color: 'personal',
+                steps: [
+                    {
+                        id: '1a',
+                        title: 'LEFT Monitor',
+                        subtitle: 'HDMI via USB-C cable',
+                        equipment: [
+                            { name: 'USB-C to HDMI', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg', note: 'Direct cable' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Plug USB-C to HDMI cable into MacBook', tip: 'Use any available USB-C port' },
+                            { text: 'Connect HDMI end to EDID 1440p', tip: 'EDID male connector fits into cable female HDMI' },
+                            { text: 'Connect EDID output directly to monitor HDMI input', tip: 'EDID male output goes straight to monitor - no coupler needed!' }
+                        ],
+                        signalChain: [
+                            { text: 'MacBook USB-C', class: 'chain-computer' },
+                            { text: 'USB-C to HDMI', class: 'chain-cable', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'LEFT Monitor HDMI', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'Simplest Setup!', text: 'Personal Mac has the cleanest connection with no extra adapters after EDID.' }
+                    },
+                    {
+                        id: '1b',
+                        title: 'RIGHT Monitor',
+                        subtitle: 'HDMI via USB-C cable',
+                        equipment: [
+                            { name: 'USB-C to HDMI', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg', note: 'Direct cable' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Plug USB-C to HDMI cable into MacBook', tip: 'Use the remaining USB-C port' },
+                            { text: 'Connect HDMI end to EDID 1440p', tip: 'EDID male connector fits into cable female HDMI' },
+                            { text: 'Connect EDID output directly to monitor HDMI input', tip: 'EDID male output goes straight to monitor - no coupler needed!' }
+                        ],
+                        signalChain: [
+                            { text: 'MacBook USB-C', class: 'chain-computer' },
+                            { text: 'USB-C to HDMI', class: 'chain-cable', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'RIGHT Monitor HDMI', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'Simplest Setup!', text: 'Personal Mac has the cleanest connection with no extra adapters after EDID.' }
+                    }
+                ]
+            },
+            work: {
+                name: 'Work MacBook',
+                color: 'work',
+                steps: [
+                    {
+                        id: '2a',
+                        title: 'LEFT Monitor',
+                        subtitle: 'DisplayPort via BENFEI',
+                        equipment: [
+                            { name: 'USB-C to HDMI', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg', note: 'Direct cable' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' },
+                            { name: 'Coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg', note: 'Female-Female' },
+                            { name: 'BENFEI', img: 'https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg', note: 'HDMI→DP' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Plug USB-C to HDMI cable into Work MacBook', tip: null },
+                            { text: 'Connect HDMI end to EDID 1440p', tip: null },
+                            { text: 'Attach Coupler to EDID output', tip: 'EDID male output needs coupler to connect to BENFEI male input' },
+                            { text: 'Connect BENFEI adapter to Coupler', tip: 'HDMI IN side goes to coupler' },
+                            { text: 'Plug BENFEI USB power cable', tip: '⚡ CRITICAL: BENFEI requires USB power to work!' },
+                            { text: 'Run DP cable from BENFEI to LEFT monitor DP input', tip: 'Use high-quality DisplayPort cable' }
+                        ],
+                        signalChain: [
+                            { text: 'Work Mac USB-C', class: 'chain-computer' },
+                            { text: 'USB-C to HDMI', class: 'chain-cable', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'Coupler', class: 'chain-coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg' },
+                            { text: 'BENFEI', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg' },
+                            { text: 'DP Cable', class: 'chain-cable' },
+                            { text: 'LEFT Monitor DP', class: 'chain-monitor' }
+                        ],
+                        warning: { title: 'USB Power Required!', text: 'BENFEI adapter must have USB power connected to function.' }
+                    },
+                    {
+                        id: '2b',
+                        title: 'RIGHT Monitor',
+                        subtitle: 'DisplayPort via BENFEI',
+                        equipment: [
+                            { name: 'USB-C to HDMI', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg', note: 'Direct cable' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' },
+                            { name: 'Coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg', note: 'Female-Female' },
+                            { name: 'BENFEI', img: 'https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg', note: 'HDMI→DP' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Plug USB-C to HDMI cable into Work MacBook', tip: null },
+                            { text: 'Connect HDMI end to EDID 1440p', tip: null },
+                            { text: 'Attach Coupler to EDID output', tip: 'EDID male output needs coupler to connect to BENFEI male input' },
+                            { text: 'Connect BENFEI adapter to Coupler', tip: 'HDMI IN side goes to coupler' },
+                            { text: 'Plug BENFEI USB power cable', tip: '⚡ CRITICAL: BENFEI requires USB power to work!' },
+                            { text: 'Run DP cable from BENFEI to RIGHT monitor DP input', tip: 'Use high-quality DisplayPort cable' }
+                        ],
+                        signalChain: [
+                            { text: 'Work Mac USB-C', class: 'chain-computer' },
+                            { text: 'USB-C to HDMI', class: 'chain-cable', img: 'https://m.media-amazon.com/images/I/61dPxJI54+L._AC_SL1393_.jpg' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'Coupler', class: 'chain-coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg' },
+                            { text: 'BENFEI', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/61epo1+QzrL._SL1500_.jpg' },
+                            { text: 'DP Cable', class: 'chain-cable' },
+                            { text: 'RIGHT Monitor DP', class: 'chain-monitor' }
+                        ],
+                        warning: { title: 'USB Power Required!', text: 'BENFEI adapter must have USB power connected to function.' }
+                    }
+                ]
+            },
+            hp: {
+                name: 'HP Dock',
+                color: 'hp',
+                steps: [
+                    {
+                        id: '3a',
+                        title: 'LEFT Monitor',
+                        subtitle: 'USB-C via dual conversion',
+                        equipment: [
+                            { name: 'DP to HDMI', img: 'https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg', note: 'First adapter' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' },
+                            { name: 'Coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg', note: 'Female-Female' },
+                            { name: 'HDMI to USB-C', img: 'https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg', note: 'Second adapter' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Connect DP to HDMI adapter to HP Dock DisplayPort output', tip: 'Use one of the two DP ports on dock' },
+                            { text: 'Run HDMI cable from adapter to EDID 1440p', tip: 'Short cable works if dock is close' },
+                            { text: 'Attach Coupler to EDID output', tip: null },
+                            { text: 'Connect HDMI to USB-C adapter to Coupler', tip: 'Final conversion to USB-C for monitor' },
+                            { text: 'Plug USB-C end into LEFT monitor USB-C input', tip: 'Monitor can provide power to adapter' }
+                        ],
+                        signalChain: [
+                            { text: 'HP Dock DP', class: 'chain-computer' },
+                            { text: 'DP to HDMI', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg' },
+                            { text: 'HDMI Cable', class: 'chain-cable' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'Coupler', class: 'chain-coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg' },
+                            { text: 'HDMI to USB-C', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg' },
+                            { text: 'LEFT Monitor USB-C', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'Two-Stage Conversion', text: 'HP Dock requires two adapters to go from DP → HDMI → USB-C while keeping EDID inline.' }
+                    },
+                    {
+                        id: '3b',
+                        title: 'RIGHT Monitor',
+                        subtitle: 'USB-C via dual conversion',
+                        equipment: [
+                            { name: 'DP to HDMI', img: 'https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg', note: 'First adapter' },
+                            { name: 'EDID 1440p', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg', note: 'Blue label' },
+                            { name: 'Coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg', note: 'Female-Female' },
+                            { name: 'HDMI to USB-C', img: 'https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg', note: 'Second adapter' }
+                        ],
+                        detailedSteps: [
+                            { text: 'Connect DP to HDMI adapter to HP Dock DisplayPort output', tip: 'Use the second DP port on dock' },
+                            { text: 'Run HDMI cable from adapter to EDID 1440p', tip: 'Short cable works if dock is close' },
+                            { text: 'Attach Coupler to EDID output', tip: null },
+                            { text: 'Connect HDMI to USB-C adapter to Coupler', tip: 'Final conversion to USB-C for monitor' },
+                            { text: 'Plug USB-C end into RIGHT monitor USB-C input', tip: 'Monitor can provide power to adapter' }
+                        ],
+                        signalChain: [
+                            { text: 'HP Dock DP #2', class: 'chain-computer' },
+                            { text: 'DP to HDMI', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/51h-PK-g+NL._AC_SX355_.jpg' },
+                            { text: 'HDMI Cable', class: 'chain-cable' },
+                            { text: 'EDID 1440p', class: 'chain-edid', img: 'https://m.media-amazon.com/images/I/512Jgn92IEL._AC_SX679_.jpg' },
+                            { text: 'Coupler', class: 'chain-coupler', img: 'https://m.media-amazon.com/images/I/717oGK8uZOL._AC_SL1500_.jpg' },
+                            { text: 'HDMI to USB-C', class: 'chain-adapter', img: 'https://m.media-amazon.com/images/I/71kRkzjEMXL._AC_SY355_.jpg' },
+                            { text: 'RIGHT Monitor USB-C', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'Two-Stage Conversion', text: 'HP Dock requires two adapters to go from DP → HDMI → USB-C while keeping EDID inline.' }
+                    }
+                ]
+            },
+            software: {
+                name: 'Software Setup',
+                color: 'software',
+                steps: [
+                    {
+                        id: '4a',
+                        title: 'Install Better Display',
+                        subtitle: 'DDC/CI Monitor Control',
+                        equipment: [],
+                        detailedSteps: [
+                            { text: 'Install Better Display via Homebrew', tip: 'Run: brew install --cask lunar (or download from lunar.fyi)' },
+                            { text: 'Open System Settings → Privacy & Security', tip: null },
+                            { text: 'Enable Accessibility permission for Better Display', tip: 'Required for DDC/CI communication' },
+                            { text: 'Enable Screen Recording permission for Better Display', tip: 'Required for some monitor features' },
+                            { text: 'Quit and reopen Better Display', tip: 'Permissions take effect after restart' },
+                            { text: 'Verify all 2 monitors appear in Better Display menu bar icon', tip: 'If missing, check BENFEI USB power and cables' }
+                        ],
+                        signalChain: [
+                            { text: 'Homebrew/Download', class: 'chain-computer' },
+                            { text: 'Install Better Display', class: 'chain-adapter' },
+                            { text: 'Grant Permissions', class: 'chain-edid' },
+                            { text: 'Verify Detection', class: 'chain-monitor' }
+                        ],
+                        warning: { title: 'Permissions Required!', text: 'Better Display MUST have Accessibility permission to control monitors via DDC/CI. Without it, input switching won\'t work.' }
+                    },
+                    {
+                        id: '4b',
+                        title: 'Configure Hotkeys',
+                        subtitle: 'Cmd+1/2/3 Switching',
+                        equipment: [],
+                        detailedSteps: [
+                            { text: 'Open Better Display Preferences (Cmd+,)', tip: null },
+                            { text: 'Go to "Hotkeys" tab', tip: null },
+                            { text: 'Find "Input Source" section', tip: 'This controls monitor input switching' },
+                            { text: 'Set Cmd+1 to switch both monitors to HDMI (Personal Mac)', tip: 'Both monitors switch to HDMI input' },
+                            { text: 'Set Cmd+2 to switch both monitors to DisplayPort (Work Mac)', tip: 'Both monitors switch to DP input' },
+                            { text: 'Set Cmd+3 to switch both monitors to USB-C (HP Dock)', tip: 'Both monitors switch to USB-C input' },
+                            { text: 'Test each hotkey to verify switching works', tip: 'Press Cmd+1/2/3 and watch monitors change inputs' }
+                        ],
+                        signalChain: [
+                            { text: 'Cmd+1', class: 'chain-computer' },
+                            { text: 'Better Display', class: 'chain-adapter' },
+                            { text: 'DDC/CI', class: 'chain-edid' },
+                            { text: 'All Monitors Switch', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'Pro Tip!', text: 'You can also set up per-monitor hotkeys if you want more granular control. Go to each monitor\'s settings in Better Display.' }
+                    },
+                    {
+                        id: '4c',
+                        title: 'Set Up InputLeap',
+                        subtitle: 'Keyboard/Mouse Sharing',
+                        equipment: [],
+                        detailedSteps: [
+                            { text: 'Install InputLeap on Personal Mac (Server)', tip: 'brew install --cask barrier' },
+                            { text: 'Install InputLeap on Work Mac (Client)', tip: 'brew install --cask barrier' },
+                            { text: 'Install InputLeap on HP laptop (Client)', tip: 'Download from github.com/debauchee/barrier' },
+                            { text: 'On Personal Mac: Select "Server" mode', tip: 'This Mac shares its keyboard/mouse' },
+                            { text: 'Click "Configure Server" → Add screens for Work Mac and HP', tip: 'Name them to match hostnames' },
+                            { text: 'Arrange screens to match your physical layout', tip: 'Drag screens to correct positions' },
+                            { text: 'On clients: Select "Client" mode and enter Personal Mac IP', tip: 'Find IP with: ipconfig getifaddr en0' },
+                            { text: 'Grant Accessibility permission on each Mac', tip: 'Required for InputLeap to control keyboard/mouse' },
+                            { text: 'Click Start on all computers', tip: 'Move mouse to screen edge to switch computers!' }
+                        ],
+                        signalChain: [
+                            { text: 'Personal Mac (Server)', class: 'chain-computer' },
+                            { text: 'Network', class: 'chain-cable' },
+                            { text: 'Work Mac (Client)', class: 'chain-adapter' },
+                            { text: 'HP (Client)', class: 'chain-coupler' }
+                        ],
+                        warning: { title: 'Network Required', text: 'All computers must be on the same network for InputLeap to work. Use Ethernet via UGREEN hubs for best performance.' }
+                    },
+                    {
+                        id: '4d',
+                        title: 'Final Verification',
+                        subtitle: '✅ Test Everything',
+                        equipment: [],
+                        detailedSteps: [
+                            { text: 'Press Cmd+1 - Both monitors should switch to HDMI (Personal Mac)', tip: 'If not working, check Better Display permissions and DDC/CI' },
+                            { text: 'Press Cmd+2 - Both monitors should switch to DP (Work Mac)', tip: 'Check BENFEI USB power if not working' },
+                            { text: 'Press Cmd+3 - Both monitors should switch to USB-C (HP Dock)', tip: 'Verify both adapters connected properly' },
+                            { text: 'Move mouse to screen edge - Cursor moves to other computer via InputLeap', tip: 'Verify keyboard works on the other computer too' },
+                            { text: 'Unplug and replug a display cable - Windows stay in place!', tip: 'EDID emulators prevent window rearranging' },
+                            { text: '🎉 Celebrate - Your KVM setup is complete!', tip: null }
+                        ],
+                        signalChain: [
+                            { text: 'Test Hotkeys', class: 'chain-computer' },
+                            { text: 'Test InputLeap', class: 'chain-adapter' },
+                            { text: 'Test Switches', class: 'chain-switch' },
+                            { text: '🎉 Complete!', class: 'chain-monitor' }
+                        ],
+                        tip: { title: 'All Done!', text: 'Your setup is complete! Use Cmd+1/2/3 to switch monitors, InputLeap for mouse/keyboard, and physical USB switch for peripherals.' }
+                    }
+                ]
+            }
+        };
+
+        // ==================== STATE ====================
+        let currentComputer = 'personal';
+        let currentStepIndex = 0;
+        let completedSteps = new Set();
+
+        // ==================== TAB SWITCHING ====================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+
+            if (tab === 'wizard') {
+                loadState();
+                renderWizard();
+            }
+        }
+
+        // ==================== WIZARD FUNCTIONS ====================
+        function selectComputer(computer) {
+            currentComputer = computer;
+            currentStepIndex = 0;
+
+            // Find first incomplete step
+            const steps = wizardData[computer].steps;
+            for (let i = 0; i < steps.length; i++) {
+                if (!completedSteps.has(steps[i].id)) {
+                    currentStepIndex = i;
+                    break;
+                }
+            }
+
+            renderWizard();
+        }
+
+        function renderWizard() {
+            updateComputerTabs();
+            renderSidebar();
+            renderStepContent();
+            updateProgress();
+            checkCompletion();
+        }
+
+        function updateComputerTabs() {
+            document.querySelectorAll('.computer-tab').forEach(tab => {
+                const computer = tab.dataset.computer;
+                const isActive = computer === currentComputer;
+                tab.classList.toggle('active', isActive);
+
+                // Update done count
+                const steps = wizardData[computer].steps;
+                const done = steps.filter(s => completedSteps.has(s.id)).length;
+                tab.querySelector('.done-count').textContent = done;
+
+                // Update section complete badge
+                tab.classList.toggle('section-complete', done === steps.length);
+            });
+        }
+
+        function renderSidebar() {
+            const steps = wizardData[currentComputer].steps;
+            const color = wizardData[currentComputer].color;
+            const html = steps.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isCompleted = completedSteps.has(step.id);
+                const indicatorClass = isCompleted ? 'completed' : (isActive ? 'active' : 'pending');
+
+                return `
+                    <div class="sidebar-step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" onclick="goToStep(${index})">
+                        <div class="step-indicator ${indicatorClass}">${isCompleted ? '✓' : index + 1}</div>
+                        <div class="step-info">
+                            <div class="step-title">${step.title}</div>
+                            <div class="step-subtitle">${step.subtitle}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('sidebarSteps').innerHTML = `<h4>${wizardData[currentComputer].name}</h4>` + html;
+        }
+
+        function renderStepContent() {
+            const step = wizardData[currentComputer].steps[currentStepIndex];
+            const color = wizardData[currentComputer].color;
+            const isCompleted = completedSteps.has(step.id);
+            const stepNumber = currentComputer === 'personal' ? '1' : (currentComputer === 'work' ? '2' : '3');
+            const stepLetter = ['A', 'B', 'C'][currentStepIndex];
+
+            // Equipment grid
+            const equipmentHtml = step.equipment.length > 0 ? `
+                <div class="equipment-needed">
+                    <h4>🔧 Equipment Needed</h4>
+                    <div class="equipment-grid-small">
+                        ${step.equipment.map(eq => `
+                            <div class="equipment-item">
+                                <img src="${eq.img}" alt="${eq.name}">
+                                <div>
+                                    <div class="eq-name">${eq.name}</div>
+                                    <div class="eq-note">${eq.note}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            // Detailed steps
+            const detailedStepsHtml = `
+                <div class="detailed-steps">
+                    <h4>📋 Step-by-Step Instructions</h4>
+                    ${step.detailedSteps.map((s, i) => `
+                        <div class="detail-step">
+                            <div class="detail-step-number">${i + 1}</div>
+                            <div class="detail-step-content">
+                                <strong>${s.text}</strong>
+                                ${s.tip ? `<div class="step-tip">💡 ${s.tip}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Signal chain
+            const signalChainHtml = `
+                <div class="wizard-signal-chain">
+                    <h4>🔗 Signal Chain</h4>
+                    <div class="signal-flow">
+                        ${step.signalChain.map((item, i) => `
+                            <div class="signal-item ${item.class}">
+                                ${item.img ? `<img src="${item.img}" alt="${item.text}">` : ''}
+                                ${item.text}
+                            </div>
+                            ${i < step.signalChain.length - 1 ? '<span class="signal-arrow">→</span>' : ''}
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Warning or tip box
+            let infoBoxHtml = '';
+            if (step.warning) {
+                infoBoxHtml = `
+                    <div class="wizard-warning">
+                        <div class="warn-icon">⚠️</div>
+                        <div class="warn-content">
+                            <h5>${step.warning.title}</h5>
+                            <p>${step.warning.text}</p>
+                        </div>
+                    </div>
+                `;
+            } else if (step.tip) {
+                infoBoxHtml = `
+                    <div class="wizard-tip">
+                        <div class="tip-icon">💡</div>
+                        <div class="tip-content">
+                            <h5>${step.tip.title}</h5>
+                            <p>${step.tip.text}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Action buttons
+            const prevDisabled = currentStepIndex === 0 && currentComputer === 'personal';
+            const actionsHtml = `
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick="previousStep()" ${prevDisabled ? 'disabled' : ''}>
+                        ← Previous
+                    </button>
+                    ${isCompleted ? `
+                        <button class="btn btn-secondary" onclick="markIncomplete('${step.id}')">
+                            ↩️ Mark Incomplete
+                        </button>
+                        <button class="btn btn-primary" onclick="nextStep()">
+                            Next Step →
+                        </button>
+                    ` : `
+                        <button class="btn btn-complete" onclick="markComplete('${step.id}')">
+                            ✅ Mark Complete
+                        </button>
+                    `}
+                </div>
+            `;
+
+            const html = `
+                <div class="step-card">
+                    <div class="step-card-header ${color}">
+                        <div class="step-card-number ${color}">${stepNumber}${stepLetter}</div>
+                        <div class="step-card-title">
+                            <h3>${wizardData[currentComputer].name} → ${step.title}</h3>
+                            <p>${step.subtitle}</p>
+                        </div>
+                    </div>
+                    <div class="step-card-body">
+                        ${equipmentHtml}
+                        ${detailedStepsHtml}
+                        ${signalChainHtml}
+                        ${infoBoxHtml}
+                        ${actionsHtml}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('stepContent').innerHTML = html;
+        }
+
+        function updateProgress() {
+            const total = wizardData.personal.steps.length +
+                         wizardData.work.steps.length +
+                         wizardData.hp.steps.length +
+                         wizardData.software.steps.length;
+            const completed = completedSteps.size;
+            const percent = Math.round((completed / total) * 100);
+
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('remainingCount').textContent = total - completed;
+            document.getElementById('percentComplete').textContent = percent + '%';
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `${completed} of ${total} steps`;
+
+            // Update milestones
+            const personalDone = wizardData.personal.steps.filter(s => completedSteps.has(s.id)).length === wizardData.personal.steps.length;
+            const workDone = wizardData.work.steps.filter(s => completedSteps.has(s.id)).length === wizardData.work.steps.length;
+            const hpDone = wizardData.hp.steps.filter(s => completedSteps.has(s.id)).length === wizardData.hp.steps.length;
+            const softwareDone = wizardData.software.steps.filter(s => completedSteps.has(s.id)).length === wizardData.software.steps.length;
+
+            document.querySelector('[data-milestone="personal"]').classList.toggle('completed', personalDone);
+            document.querySelector('[data-milestone="work"]').classList.toggle('completed', workDone);
+            document.querySelector('[data-milestone="hp"]').classList.toggle('completed', hpDone);
+            document.querySelector('[data-milestone="software"]').classList.toggle('completed', softwareDone);
+            document.querySelector('[data-milestone="complete"]').classList.toggle('completed', completed === total);
+        }
+
+        function checkCompletion() {
+            const total = wizardData.personal.steps.length +
+                         wizardData.work.steps.length +
+                         wizardData.hp.steps.length +
+                         wizardData.software.steps.length;
+            if (completedSteps.size === total) {
+                document.getElementById('wizardMain').style.display = 'none';
+                document.querySelector('.computer-selector').style.display = 'none';
+                document.getElementById('wizardComplete').classList.add('show');
+            } else {
+                document.getElementById('wizardMain').style.display = 'flex';
+                document.querySelector('.computer-selector').style.display = 'flex';
+                document.getElementById('wizardComplete').classList.remove('show');
+            }
+        }
+
+        function goToStep(index) {
+            currentStepIndex = index;
+            renderWizard();
+        }
+
+        function previousStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+            } else {
+                // Go to previous computer/section
+                if (currentComputer === 'work') {
+                    currentComputer = 'personal';
+                    currentStepIndex = 2;
+                } else if (currentComputer === 'hp') {
+                    currentComputer = 'work';
+                    currentStepIndex = 2;
+                } else if (currentComputer === 'software') {
+                    currentComputer = 'hp';
+                    currentStepIndex = 2;
+                }
+            }
+            renderWizard();
+        }
+
+        function nextStep() {
+            const steps = wizardData[currentComputer].steps;
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+            } else {
+                // Go to next computer/section
+                if (currentComputer === 'personal') {
+                    currentComputer = 'work';
+                    currentStepIndex = 0;
+                } else if (currentComputer === 'work') {
+                    currentComputer = 'hp';
+                    currentStepIndex = 0;
+                } else if (currentComputer === 'hp') {
+                    currentComputer = 'software';
+                    currentStepIndex = 0;
+                }
+            }
+            renderWizard();
+        }
+
+        function markComplete(stepId) {
+            completedSteps.add(stepId);
+            saveState();
+
+            // Show completion modal
+            const step = wizardData[currentComputer].steps[currentStepIndex];
+            document.getElementById('modalTitle').textContent = `${step.title} Complete!`;
+            document.getElementById('modalMessage').textContent = 'Great job! Click continue to move to the next step.';
+            document.getElementById('completionModal').classList.add('show');
+        }
+
+        function markIncomplete(stepId) {
+            completedSteps.delete(stepId);
+            saveState();
+            renderWizard();
+        }
+
+        function closeModal() {
+            document.getElementById('completionModal').classList.remove('show');
+            nextStep();
+        }
+
+        function resetWizard() {
+            if (confirm('Are you sure you want to reset all progress?')) {
+                completedSteps.clear();
+                currentComputer = 'personal';
+                currentStepIndex = 0;
+                localStorage.removeItem('kvmWizardProgress');
+                renderWizard();
+            }
+        }
+
+        // ==================== PERSISTENCE ====================
+        function saveState() {
+            localStorage.setItem('kvmWizardProgress', JSON.stringify([...completedSteps]));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('kvmWizardProgress');
+            if (saved) {
+                completedSteps = new Set(JSON.parse(saved));
+            }
+        }
+
+        // ==================== INIT ====================
+        loadState();
+    </script>
+</body>
+</html>

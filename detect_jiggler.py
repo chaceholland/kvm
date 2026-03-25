@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Mouse Jiggler Detector for macOS
+Mouse Jiggler Detector (Windows / macOS)
 Monitors mouse movement patterns and flags jiggler-like behavior.
 
 Jiggler signatures detected:
@@ -11,44 +11,63 @@ Jiggler signatures detected:
   5. No acceleration curve (real humans have variable speed)
 
 Usage:
-    python3 detect_jiggler.py              # Monitor and detect (default 5min window)
-    python3 detect_jiggler.py --duration 600  # Monitor for 10 minutes
-    python3 detect_jiggler.py --sensitivity high  # More aggressive detection
-    python3 detect_jiggler.py --log mouse_log.csv  # Save raw data to CSV
+    python detect_jiggler.py                      # Monitor and detect (default 5min window)
+    python detect_jiggler.py --duration 600       # Monitor for 10 minutes
+    python detect_jiggler.py --sensitivity high   # More aggressive detection
+    python detect_jiggler.py --log mouse_log.csv  # Save raw data to CSV
+    python detect_jiggler.py --demo               # Demo with synthetic data (no OS deps)
 
-Requires: pyobjc-framework-Quartz (pip3 install pyobjc-framework-Quartz)
+Windows: Uses Win32 API via ctypes (no install needed - works with stock Python)
+macOS:   Requires pyobjc-framework-Quartz (pip3 install pyobjc-framework-Quartz)
 """
 
 import argparse
 import csv
 import math
+import platform
 import signal
 import sys
 import time
+import threading
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
 from statistics import mean, stdev
 
-# Attempt to import Quartz for macOS mouse event monitoring
-try:
-    from Quartz import (
-        CGEventGetLocation,
-        CGEventGetTimestamp,
-        CGEventTapCreate,
-        CFMachPortCreateRunLoopSource,
-        CFRunLoopAddSource,
-        CFRunLoopGetCurrent,
-        CFRunLoopRun,
-        CFRunLoopStop,
-        kCGEventMouseMoved,
-        kCGHeadInsertEventTap,
-        kCGSessionEventTap,
-        kCFRunLoopCommonModes,
-    )
-    HAS_QUARTZ = True
-except ImportError:
-    HAS_QUARTZ = False
+PLATFORM = platform.system()
+
+# --- Platform-specific imports ---
+
+HAS_QUARTZ = False
+HAS_WIN32 = False
+
+if PLATFORM == "Darwin":
+    try:
+        from Quartz import (
+            CGEventGetLocation,
+            CGEventGetTimestamp,
+            CGEventTapCreate,
+            CFMachPortCreateRunLoopSource,
+            CFRunLoopAddSource,
+            CFRunLoopGetCurrent,
+            CFRunLoopRun,
+            CFRunLoopStop,
+            kCGEventMouseMoved,
+            kCGHeadInsertEventTap,
+            kCGSessionEventTap,
+            kCFRunLoopCommonModes,
+        )
+        HAS_QUARTZ = True
+    except ImportError:
+        pass
+
+if PLATFORM == "Windows":
+    try:
+        import ctypes
+        import ctypes.wintypes
+        HAS_WIN32 = True
+    except ImportError:
+        pass
 
 
 @dataclass
@@ -182,8 +201,6 @@ class JigglerDetector:
                 )
 
         # --- 4. Lack of acceleration curve ---
-        # Real mouse movements have acceleration (start slow, speed up, slow down)
-        # Jigglers move at constant speed
         if len(displacements) >= 10:
             speeds = []
             for i in range(len(intervals)):
@@ -215,12 +232,11 @@ class JigglerDetector:
                 scores.append(("positional_cluster", score))
                 reasons.append(
                     f"Movement confined to {x_range:.0f}x{y_range:.0f}px area "
-                    f"({bounding_area:.0f}px²)"
+                    f"({bounding_area:.0f}px\u00b2)"
                 )
 
         # --- Compute overall confidence ---
         if scores:
-            # Weighted average favoring the strongest signals
             weights = {
                 "interval_regularity": 3.0,
                 "tiny_movements": 2.0,
@@ -287,10 +303,226 @@ def format_result(result: AnalysisResult) -> str:
     return "\n".join(lines)
 
 
-def run_monitor(args):
+# ============================================================
+# Windows monitor: polls GetCursorPos via ctypes (no pip install)
+# ============================================================
+
+def run_monitor_windows(args):
+    """Run live mouse monitoring on Windows using Win32 GetCursorPos polling."""
+    if not HAS_WIN32:
+        print("Error: ctypes not available. This should not happen on Windows.")
+        sys.exit(1)
+
+    detector = JigglerDetector(
+        window_seconds=args.duration,
+        sensitivity=args.sensitivity,
+    )
+
+    csv_writer = None
+    csv_file = None
+    if args.log:
+        csv_file = open(args.log, "w", newline="")
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(["timestamp", "x", "y"])
+
+    # Poll interval: 50ms gives good resolution without high CPU
+    poll_interval = 0.05
+    analysis_interval = 10  # print analysis every 10 seconds
+    last_analysis = time.time()
+    last_x, last_y = None, None
+
+    class POINT(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    GetCursorPos = ctypes.windll.user32.GetCursorPos
+
+    running = threading.Event()
+    running.set()
+
+    print(f"Monitoring mouse movements on Windows (window={args.duration}s, sensitivity={args.sensitivity})")
+    print(f"Polling every {poll_interval * 1000:.0f}ms, analysis every {analysis_interval}s.")
+    print(f"Press Ctrl+C to stop and see final report.\n")
+
+    def handle_signal(sig, frame):
+        running.clear()
+
+    signal.signal(signal.SIGINT, handle_signal)
+
+    while running.is_set():
+        pt = POINT()
+        GetCursorPos(ctypes.byref(pt))
+        now = time.time()
+        cx, cy = pt.x, pt.y
+
+        # Only record when position actually changes
+        if last_x is None or cx != last_x or cy != last_y:
+            if last_x is not None:  # skip the very first reading
+                evt = MouseEvent(timestamp=now, x=float(cx), y=float(cy))
+                detector.add_event(evt)
+
+                if csv_writer:
+                    csv_writer.writerow([f"{now:.4f}", f"{cx}", f"{cy}"])
+
+            last_x, last_y = cx, cy
+
+        # Periodic analysis
+        if now - last_analysis >= analysis_interval:
+            last_analysis = now
+            result = detector.analyze()
+            print(format_result(result))
+
+        time.sleep(poll_interval)
+
+    # Final report on Ctrl+C
+    print("\n\nFinal analysis:")
+    result = detector.analyze()
+    print(format_result(result))
+    if csv_file:
+        csv_file.close()
+        print(f"\nRaw data saved to {args.log}")
+
+
+# ============================================================
+# Windows low-level hook monitor (captures injected events)
+# ============================================================
+
+def run_monitor_windows_hook(args):
+    """
+    Run live mouse monitoring on Windows using a low-level mouse hook.
+    This method can detect the LLMHF_INJECTED flag, which reveals
+    software-generated mouse events (software jigglers).
+    """
+    if not HAS_WIN32:
+        print("Error: ctypes not available.")
+        sys.exit(1)
+
+    detector = JigglerDetector(
+        window_seconds=args.duration,
+        sensitivity=args.sensitivity,
+    )
+
+    injected_count = [0]
+    total_move_count = [0]
+
+    csv_writer = None
+    csv_file = None
+    if args.log:
+        csv_file = open(args.log, "w", newline="")
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(["timestamp", "x", "y", "injected"])
+
+    analysis_interval = 10
+    last_analysis = [time.time()]
+
+    # Win32 constants
+    WH_MOUSE_LL = 14
+    WM_MOUSEMOVE = 0x0200
+    LLMHF_INJECTED = 0x00000001
+
+    class MSLLHOOKSTRUCT(ctypes.Structure):
+        _fields_ = [
+            ("pt", ctypes.wintypes.POINT),
+            ("mouseData", ctypes.wintypes.DWORD),
+            ("flags", ctypes.wintypes.DWORD),
+            ("time", ctypes.wintypes.DWORD),
+            ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)),
+        ]
+
+    HOOKPROC = ctypes.CFUNCTYPE(
+        ctypes.c_long,
+        ctypes.c_int,
+        ctypes.wintypes.WPARAM,
+        ctypes.wintypes.LPARAM,
+    )
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+
+    SetWindowsHookExW = user32.SetWindowsHookExW
+    CallNextHookEx = user32.CallNextHookEx
+    UnhookWindowsHookEx = user32.UnhookWindowsHookEx
+    GetMessageW = user32.GetMessageW
+    PostThreadMessageW = user32.PostThreadMessageW
+
+    hook_handle = [None]
+
+    def low_level_mouse_proc(nCode, wParam, lParam):
+        if nCode >= 0 and wParam == WM_MOUSEMOVE:
+            ms = ctypes.cast(lParam, ctypes.POINTER(MSLLHOOKSTRUCT)).contents
+            now = time.time()
+            is_injected = bool(ms.flags & LLMHF_INJECTED)
+
+            total_move_count[0] += 1
+            if is_injected:
+                injected_count[0] += 1
+
+            evt = MouseEvent(timestamp=now, x=float(ms.pt.x), y=float(ms.pt.y))
+            detector.add_event(evt)
+
+            if csv_writer:
+                csv_writer.writerow([f"{now:.4f}", f"{ms.pt.x}", f"{ms.pt.y}", int(is_injected)])
+
+            if now - last_analysis[0] >= analysis_interval:
+                last_analysis[0] = now
+                result = detector.analyze()
+                # Add injected event info to output
+                pct = (injected_count[0] / total_move_count[0] * 100) if total_move_count[0] > 0 else 0
+                extra = f"\n  Injected events: {injected_count[0]}/{total_move_count[0]} ({pct:.1f}%)"
+                if pct > 5:
+                    extra += "  <-- SOFTWARE JIGGLER DETECTED (injected flag set)"
+                print(format_result(result) + extra)
+
+        return CallNextHookEx(hook_handle[0], nCode, wParam, lParam)
+
+    # Must keep a reference to the callback to prevent garbage collection
+    hook_proc_cb = HOOKPROC(low_level_mouse_proc)
+
+    hook_handle[0] = SetWindowsHookExW(
+        WH_MOUSE_LL,
+        hook_proc_cb,
+        kernel32.GetModuleHandleW(None),
+        0,
+    )
+
+    if not hook_handle[0]:
+        print("Error: Could not install mouse hook.")
+        print("Try running as Administrator.")
+        sys.exit(1)
+
+    print(f"Monitoring mouse via low-level hook (window={args.duration}s, sensitivity={args.sensitivity})")
+    print(f"This mode also detects the INJECTED flag on software-generated mouse events.")
+    print(f"Analysis every {analysis_interval}s. Press Ctrl+C to stop.\n")
+
+    def handle_signal(sig, frame):
+        UnhookWindowsHookEx(hook_handle[0])
+        print("\n\nFinal analysis:")
+        result = detector.analyze()
+        pct = (injected_count[0] / total_move_count[0] * 100) if total_move_count[0] > 0 else 0
+        extra = f"\n  Injected events: {injected_count[0]}/{total_move_count[0]} ({pct:.1f}%)"
+        if pct > 5:
+            extra += "  <-- SOFTWARE JIGGLER DETECTED (injected flag set)"
+        print(format_result(result) + extra)
+        if csv_file:
+            csv_file.close()
+            print(f"\nRaw data saved to {args.log}")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, handle_signal)
+
+    # Message loop (required for low-level hooks)
+    msg = ctypes.wintypes.MSG()
+    while GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
+        pass
+
+
+# ============================================================
+# macOS monitor
+# ============================================================
+
+def run_monitor_macos(args):
     """Run live mouse monitoring on macOS using Quartz event taps."""
     if not HAS_QUARTZ:
-        print("Error: pyobjc-framework-Quartz is required for live monitoring.")
+        print("Error: pyobjc-framework-Quartz is required for live monitoring on macOS.")
         print("Install it with: pip3 install pyobjc-framework-Quartz")
         print("\nAlternatively, use --demo to see detection on synthetic data.")
         sys.exit(1)
@@ -308,7 +540,7 @@ def run_monitor(args):
         csv_writer.writerow(["timestamp", "x", "y"])
 
     last_analysis = [time.time()]
-    analysis_interval = 10  # analyze every 10 seconds
+    analysis_interval = 10
 
     def callback(proxy, event_type, event, refcon):
         loc = CGEventGetLocation(event)
@@ -327,11 +559,10 @@ def run_monitor(args):
 
         return event
 
-    # Create event tap
     tap = CGEventTapCreate(
         kCGSessionEventTap,
         kCGHeadInsertEventTap,
-        0,  # listen only (passive)
+        0,
         1 << kCGEventMouseMoved,
         callback,
         None,
@@ -363,33 +594,32 @@ def run_monitor(args):
     CFRunLoopRun()
 
 
+# ============================================================
+# Demo mode
+# ============================================================
+
 def run_demo(args):
     """Run detection on synthetic jiggler-like data for demonstration."""
     print("=== Demo Mode: Simulating mouse jiggler patterns ===\n")
 
     detector = JigglerDetector(window_seconds=300, sensitivity=args.sensitivity)
 
-    # Simulate a jiggler: small oscillations at regular intervals
     print("--- Scenario 1: Classic jiggler (1px oscillation every 30s) ---")
     base_time = time.time()
     for i in range(20):
         x = 500 + (1 if i % 2 == 0 else -1)
         y = 400
         detector.add_event(MouseEvent(timestamp=base_time + i * 30, x=x, y=y))
-
     result = detector.analyze()
     print(format_result(result))
 
-    # Reset for next scenario
     detector2 = JigglerDetector(window_seconds=300, sensitivity=args.sensitivity)
-
     print("\n--- Scenario 2: Normal human mouse usage ---")
     import random
     random.seed(42)
     x, y = 500.0, 400.0
     t = time.time()
     for i in range(40):
-        # Human-like: variable intervals, larger movements, acceleration
         dt = random.uniform(0.1, 3.0)
         t += dt
         dx = random.gauss(0, 50)
@@ -397,11 +627,9 @@ def run_demo(args):
         x = max(0, min(2560, x + dx))
         y = max(0, min(1440, y + dy))
         detector2.add_event(MouseEvent(timestamp=t, x=x, y=y))
-
     result2 = detector2.analyze()
     print(format_result(result2))
 
-    # Scenario 3: Software jiggler (circle pattern)
     detector3 = JigglerDetector(window_seconds=300, sensitivity=args.sensitivity)
     print("\n--- Scenario 3: Software jiggler (micro-circle every 45s) ---")
     t = time.time()
@@ -411,24 +639,28 @@ def run_demo(args):
         x = cx + 3 * math.cos(angle)
         y = cy + 3 * math.sin(angle)
         detector3.add_event(MouseEvent(timestamp=t + i * 45, x=x, y=y))
-
     result3 = detector3.analyze()
     print(format_result(result3))
 
     print("\n=== Demo complete ===")
 
 
+# ============================================================
+# Main
+# ============================================================
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Detect mouse jiggler activity on macOS",
+        description="Detect mouse jiggler activity (Windows & macOS)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 detect_jiggler.py                    # Live monitor (5min window)
-  python3 detect_jiggler.py --duration 600     # 10-minute analysis window
-  python3 detect_jiggler.py --sensitivity high  # Catch subtler jigglers
-  python3 detect_jiggler.py --log data.csv     # Save raw events to CSV
-  python3 detect_jiggler.py --demo             # Run on synthetic data
+  python detect_jiggler.py                     # Live monitor (5min window)
+  python detect_jiggler.py --duration 600      # 10-minute analysis window
+  python detect_jiggler.py --sensitivity high  # Catch subtler jigglers
+  python detect_jiggler.py --log data.csv      # Save raw events to CSV
+  python detect_jiggler.py --hook              # Windows: use low-level hook (detects injected events)
+  python detect_jiggler.py --demo              # Demo with synthetic data
         """,
     )
     parser.add_argument(
@@ -444,16 +676,29 @@ Examples:
         help="Save raw mouse events to CSV file",
     )
     parser.add_argument(
+        "--hook", action="store_true",
+        help="Windows only: use low-level mouse hook to detect injected/synthetic events",
+    )
+    parser.add_argument(
         "--demo", action="store_true",
-        help="Run demo with synthetic data (no macOS dependencies needed)",
+        help="Run demo with synthetic data (no OS dependencies needed)",
     )
 
     args = parser.parse_args()
 
     if args.demo:
         run_demo(args)
+    elif PLATFORM == "Windows":
+        if args.hook:
+            run_monitor_windows_hook(args)
+        else:
+            run_monitor_windows(args)
+    elif PLATFORM == "Darwin":
+        run_monitor_macos(args)
     else:
-        run_monitor(args)
+        print(f"Unsupported platform: {PLATFORM}")
+        print("Use --demo to test the detection logic.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
